@@ -1,2 +1,3 @@
 # NPSMC.jl
-Non parametric 
+
+Non parametric sequential Monte-Carlo methods
