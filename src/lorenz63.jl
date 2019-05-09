@@ -1,12 +1,19 @@
+using DifferentialEquations
 using ParameterizedFunctions
 
-g = @ode_def begin
-  dx = σ*(y-x)
-  dy = x*(ρ-z) - y
-  dz = x*y - β*z
-end σ ρ β
+function lorenz63(du,u,p,t)
+    du[1] = 10.0*(u[2]-u[1])
+    du[2] = u[1]*(28.0-u[3]) - u[2]
+    du[3] = u[1]*u[2] - (8/3)*u[3]
+end
 
-u0 = [1.0;0.0;0.0]
-tspan = (0.0,1.0)
-p = [10.0,28.0,8/3]
-prob = ODEProblem(g,u0,tspan,p)
+function solve_lorenz63()
+
+    u0 = [1.0;0.0;0.0]
+    tspan = (0.0,100.0)
+    prob = ODEProblem(lorenz63,u0,tspan)
+    sol = solve(prob)
+
+    true
+
+end
