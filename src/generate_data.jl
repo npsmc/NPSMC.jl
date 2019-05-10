@@ -1,12 +1,16 @@
 using DifferentialEquations 
 using Random
 
+export TimeSeries
+
 mutable struct TimeSeries
 
-   values :: Vector{Float64}
    time   :: Vector{Float64}
+   values :: Vector{Vector{Float64}}
 
 end
+
+export Catalog
 
 mutable struct Catalog
 
