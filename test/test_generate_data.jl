@@ -1,5 +1,11 @@
 @testset " Generate data for Lorenz-63 model " begin
 
+    import Random
+    using Distributions
+    using LinearAlgebra
+
+    Random.seed!(1)
+
     σ = 10.0
     ρ = 28.0
     β = 8.0/3
@@ -29,27 +35,23 @@
     p = [10.0,28.0,8/3]
     prob = ODEProblem(lorenz63, x0, tspan, p)
 
-    sol = solve(prob, reltol=1e-6, save_everystep=false)
+    x0 = last(solve(prob, reltol=1e-6, save_everystep=false))
+    tspan = (0.0,ssm.nb_loop_test)
+    prob = ODEProblem(lorenz63, x0, tspan, p)
 
-    @show sol
-#    # use this to generate the same data for different simulations
-#    Random.seed!(1)
-#    
-#    x0 = S[S.shape[0]-1,:]
-#
-#    # generate true state (xt)
-#    S = odeint(Lorenz_63,x0,np.arange(0.01,ssm.nb_loop_test+0.000001,
-#        ssm.dt_integration),args=(ssm.parameters.sigma,ssm.parameters.rho,
-#        ssm.parameters.beta))
-#    T_test = S.shape[0]      
-#    t_xt = np.arange(0,T_test,ssm.dt_states)       
-#    xt.time = t_xt*ssm.dt_integration
-#    xt.values = S[t_xt,:]
-#    
-#    # generate  partial/noisy observations (yo)
-#    eps = np.random.multivariate_normal(np.zeros(3),ssm.sigma2_obs*np.eye(3,3),T_test)
-#    yo_tmp = S[t_xt,:]+eps[t_xt,:]
-#    t_yo = np.arange(0,T_test,ssm.dt_obs)
+    # generSate true state (xt)
+    sol = solve(prob,reltol=1e-6,saveat=dt_states)
+    xt  = TimeSeries(sol.t, sol.u)
+
+    # generate  partial/noisy observations (yo)
+    d   = MvNormal(ssm.sigma2_obs*Matrix(I,3,3))
+
+    n   = length(xt.values)
+    eps = rand(d, n)
+
+    @show eps'
+    #yo_tmp = xt.values .+ eps
+    #t_yo   = collect(0:ssm.dt_obs:last(xt.time))
 #    i_t_obs = np.nonzero(np.in1d(t_xt,t_yo))[0]
 #    yo.values = xt.values*np.nan
 #    yo.values[np.ix_(i_t_obs,ssm.var_obs)] = yo_tmp[np.ix_(i_t_obs,ssm.var_obs)]
