@@ -6,7 +6,7 @@ export TimeSeries
 mutable struct TimeSeries
 
    time   :: Vector{Float64}
-   values :: Vector{Vector{Float64}}
+   values :: Array{Float64,2}
 
 end
 
@@ -14,9 +14,9 @@ export Catalog
 
 mutable struct Catalog
 
-   analogs    :: Vector{Float64}
-   successors :: Vector{Float64}
-   sources    :: Vector{Float64}
+   analogs    :: Array{Float64,2}
+   successors :: Array{Float64,2}
+   sources    :: Array{Float64,2}
 
 end
 
