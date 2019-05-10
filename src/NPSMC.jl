@@ -1,7 +1,6 @@
 module NPSMC
 
-export solve_lorenz63
-
-include("lorenz63.jl")
+include("models.jl")
+include("generate_data.jl")
 
 end
