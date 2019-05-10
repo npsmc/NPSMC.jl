@@ -1,5 +1,7 @@
 using DifferentialEquations
 
+export lorenz63
+
 """ 
 
 Lorenz-63 dynamical model 
