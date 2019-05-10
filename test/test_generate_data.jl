@@ -41,19 +41,20 @@
 
     # generSate true state (xt)
     sol = solve(prob,reltol=1e-6,saveat=dt_states)
-    xt  = TimeSeries(sol.t, sol.u)
+    xt  = TimeSeries(sol.t, vcat(sol.u'...))
 
     # generate  partial/noisy observations (yo)
     d   = MvNormal(ssm.sigma2_obs*Matrix(I,3,3))
 
-    n   = length(xt.values)
+    n   = length(xt.time)
     eps = rand(d, n)
+    @show size(xt.values), size(eps)
 
-    @show eps'
-    #yo_tmp = xt.values .+ eps
-    #t_yo   = collect(0:ssm.dt_obs:last(xt.time))
+    yo_tmp = xt.values .+ eps'
+    t_yo   = collect(0:ssm.dt_obs:last(xt.time))
+    yo     = TimeSeries( t_yo,  xt.values .* missing)
+
 #    i_t_obs = np.nonzero(np.in1d(t_xt,t_yo))[0]
-#    yo.values = xt.values*np.nan
 #    yo.values[np.ix_(i_t_obs,ssm.var_obs)] = yo_tmp[np.ix_(i_t_obs,ssm.var_obs)]
 #    yo.time = xt.time
 #    
