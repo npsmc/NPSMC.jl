@@ -1,16 +1,8 @@
 # -*- coding: utf-8 -*-
-using DifferentialEquations, Distributions, Plots
+using DifferentialEquations, Distributions
 using Random, LinearAlgebra
 
-include("../src/models.jl")
-
-include("../src/generate_data.jl")
-
-# +
-#@testset " Generate data for Lorenz-63 model " begin
-
-
-    Random.seed!(1)
+@testset " Generate data for Lorenz-63 model " begin
 
     σ = 10.0
     ρ = 28.0
@@ -31,62 +23,9 @@ include("../src/generate_data.jl")
                       nb_loop_train, nb_loop_test,
                       sigma2_catalog, sigma2_obs )
 
-# +
-@assert ssm.dt_states < ssm.dt_obs
-# @error " ssm.dt_obs must be bigger than ssm.dt_states"
-@assert mod(ssm.dt_obs,ssm.dt_states) == 0.0
-# @error " ssm.dt_obs must be a multiple of ssm.dt_states "
-# 5 time steps (to be in the attractor space)       
-x0 = [8.0;0.0;30.0]
-tspan = (0.0,5.0)
-p = [10.0,28.0,8/3]
-prob = ODEProblem(lorenz63, x0, tspan, p)
+    catalog = generate_data( ssm )
 
-x0 = last(solve(prob, reltol=1e-6, save_everystep=false))
-tspan = (0.0,ssm.nb_loop_test)
-prob = ODEProblem(lorenz63, x0, tspan, p)
+    @test true
 
-# generSate true state (xt)
-sol = solve(prob,reltol=1e-6,saveat=dt_integration)
-xt  = TimeSeries(sol.t, vcat(sol.u'...))
-
-# generate  partial/noisy observations (yo)
-d   = MvNormal(ssm.sigma2_obs .* Matrix(I,3,3))
-
-yo     = TimeSeries( xt.time, xt.values .* NaN)
-step = ssm.dt_obs ÷ ssm.dt_states
-for j in ssm.var_obs
-    for i in 1:step:nvalues
-        yo.values[i,j] = xt.values[i,j] + eps[j,i]
-    end
 end
-nvalues = length(xt.time)
-eps = rand(d, nvalues)
-plot(  xt.time, xt.values)
-scatter!(yo.time, yo.values[:,var_obs])
-
-# +
-#generate catalog
-x0 = last(sol)
-tspan = (0.0,ssm.nb_loop_train)
-prob = ODEProblem(lorenz63, x0, tspan, p)
-sol = solve(prob,reltol=1e-6,saveat=dt_integration)
-n = length(sol.t)
-if ssm.sigma2_catalog > 0
-    d   = MvNormal([0.,0.0,.0], ssm.sigma2_catalog .* Matrix(I,3,3))
-    eta = rand(d, n)
-    catalog_tmp = vcat(sol.u'...) .+ eta'
-else
-    catalog_tmp = vcat(sol.u'...) 
-end
-
-catalog = Catalog( catalog_tmp[1:end-dt_states,:],
-                   catalog_tmp[dt_states:end,:], 
-                   ssm)
-
-   # @test true
-
-#end
-# -
-
 
