@@ -72,17 +72,18 @@ struct AnalogForecasting
     regression    :: Symbol
     sampling      :: Symbol
 
-end 
 
-function AnalogForecasting( k       :: Integer, 
-                            xt      :: TimeSeries, 
-                            catalog :: Catalog,
-                            regression = :local_linear,
-                            sampling   = :gaussian )
-
-    neighborhood = trues((xt.nv, xt.nv)) # global analogs
-
-    AnalogForecasting( k, neighborhood, catalog, regression, sampling)
+    function AnalogForecasting( k       :: Int64, 
+                                xt      :: TimeSeries, 
+                                catalog :: Catalog)
+    
+        neighborhood = trues((xt.nv, xt.nv)) # global analogs
+        regression = :local_linear
+        sampling   = :gaussian
+    
+        new( k, neighborhood, catalog, regression, sampling)
+    
+    end 
 
 end 
 
