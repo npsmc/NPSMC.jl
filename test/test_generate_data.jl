@@ -23,7 +23,7 @@ using Random, LinearAlgebra
                       nb_loop_train, nb_loop_test,
                       sigma2_catalog, sigma2_obs )
 
-    catalog = generate_data( ssm )
+    xt, yo, catalog = generate_data( ssm )
 
     @test true
 

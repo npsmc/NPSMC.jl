@@ -58,7 +58,7 @@ mutable struct Catalog{T}
    function Catalog( data :: Array{T,2}, ssm :: StateSpace) where T
 
        analogs    = @view data[1:end-ssm.dt_states,:]
-       successors = @view data[ssm.dt_states:end,:]
+       successors = @view data[ssm.dt_states+1:end,:]
 
        new{T}( data, analogs, successors, ssm)
 
@@ -92,7 +92,7 @@ function generate_data( ssm )
     prob = ODEProblem(lorenz63, x0, tspan, p)
     
     # generSate true state (xt)
-    sol = solve(prob,reltol=1e-6,saveat=ssm.dt_integration)
+    sol = solve(prob,reltol=1e-6,saveat=ssm.dt_states)
     xt  = TimeSeries(sol.t, vcat(sol.u'...))
     
     # generate  partial/noisy observations (yo)

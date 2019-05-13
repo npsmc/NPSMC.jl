@@ -17,6 +17,7 @@
 include("src/models.jl")
 include("src/generate_data.jl")
 
+
 # +
 σ = 10.0
 ρ = 28.0
@@ -27,8 +28,8 @@ dt_states      = 1
 dt_obs         = 8 
 parameters     = [σ, ρ, β]
 var_obs        = [1]
-nb_loop_train  = 10
-nb_loop_test   = 1
+nb_loop_train  = 10^2 
+nb_loop_test   = 10
 sigma2_catalog = 0.0
 sigma2_obs     = 2.0
 
@@ -38,13 +39,13 @@ ssm = StateSpace( dt_integration, dt_states, dt_obs,
                   sigma2_catalog, sigma2_obs )
 
 xt, yo, catalog = generate_data( ssm )
-
-
-# +
-using Plots
-
-plot(catalog.analogs)
-plot!(catalog.successors)
 # -
+
+
+include("src/analog_forecasting.jl")
+af = AnalogForecasting( 5, xt, catalog, regression = :local_linear, sampling = :gaussian )
+
+
+
 
 
