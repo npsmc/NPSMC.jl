@@ -36,11 +36,8 @@ ssm = StateSpace( dt_integration, dt_states, dt_obs,
 
 xt, yo, catalog = generate_data( ssm )
 
+af = AnalogForecasting( 5, xt, catalog )
 
-af = AnalogForecasting( 50, xt, catalog; 
-                        regression = :local_linear, 
-                        sampling = :gaussian )
-
-da = DataAssimilation( :AnEnKS, 100, xt :: TimeSeries)
+da = DataAssimilation( :AnEnKS, 10, xt, ssm.sigma2_obs )
 
 end
