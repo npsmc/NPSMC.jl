@@ -34,10 +34,10 @@ ssm = StateSpace( dt_integration, dt_states, dt_obs,
                   nb_loop_train, nb_loop_test,
                   sigma2_catalog, sigma2_obs )
 
-catalog = generate_data( ssm )
+xt, yo, catalog = generate_data( ssm )
 
 
-af = AnalogForecasting( k = 50, catalog; 
+af = AnalogForecasting( 50, xt, catalog; 
                         regression = :local_linear, 
                         sampling = :gaussian )
 
