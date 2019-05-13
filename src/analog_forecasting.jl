@@ -1,4 +1,4 @@
-using Statistics
+using Statistics, NearestNeighbors
 
 " Compute the Root Mean Square Error between 2 n-dimensional vectors. "
 function RMSE(a, b)
@@ -66,21 +66,24 @@ parameters of the analog forecasting method
 """
 struct AnalogForecasting
 
-    k             :: Integer # number of analogs
-    neighborhood  :: Array{Integer, 2}
+    k             :: Int64 # number of analogs
+    neighborhood  :: BitArray{2}
     catalog       :: Catalog
     regression    :: Symbol
     sampling      :: Symbol
 
-    function AnalogForecasting( k, xt, catalog; 
-                                regression = :local_linear, 
-                                sampling = :gaussian)
-    
-        neighborhood = ones(Integer, (xt.nv, xt.nv)) # global analogs
+end 
 
-        new( k, neighborhood, catalog, regression, sampling)
+function AnalogForecasting( k       :: Integer, 
+                            xt      :: TimeSeries, 
+                            catalog :: Catalog,
+                            regression = :local_linear,
+                            sampling   = :gaussian )
 
-    end 
+    neighborhood = trues((xt.nv, xt.nv)) # global analogs
+
+    AnalogForecasting( k, neighborhood, catalog, regression, sampling)
+
 end 
 
 """ 
@@ -98,29 +101,32 @@ function ( af :: AnalogForecasting)(x :: Array{T,2}) where T
     # local or global analog forecasting
     while !stop_condition
 
-#=
-        # in case of global approach
-        if np.all(AF.neighborhood == 1):
-            i_var_neighboor = np.arange(n,dtype=np.int64)
-            i_var = np.arange(n, dtype=np.int64)
-            stop_condition = 1
-
-        # in case of local approach
-        else:
-            i_var_neighboor = np.where(AF.neighborhood[int(i_var),:]==1)[0]
+        if all(af.neighborhood) # in case of global approach
+            i_var_neighboor = collect(1:n)
+            i_var           = collect(1:n)
+            stop_condition  = true
+        else                    # in case of local approach
+            i_var_neighboor = af.neighborhood[i_var,:] 
+        end
             
         # find the indices and distances of the k-nearest neighbors (knn)
-        kdt = KDTree(AF.catalog.analogs[:,i_var_neighboor], leaf_size=50, metric='euclidean')
-        dist_knn, index_knn = kdt.query(x[:,i_var_neighboor], AF.k)
+        kdt = KDTree(AF.catalog.analogs[:,i_var_neighboor], 
+                     leaf_size=50)
+
+        dist_knn, index_knn = knn(kdt, x[:,i_var_neighboor], af.k)
         
         # parameter of normalization for the kernels
-        lambdaa = np.median(dist_knn)
+        lambdaa = median(dist_knn)
 
         # compute weights
-        if AF.k == 1:
-            weights = np.ones([N,1])
-        else:
-            weights = mk_stochastic(np.exp(-np.power(dist_knn,2)/lambdaa))
+        if af.k == 1
+            weights = ones(Float64,(N,1))
+        else
+            weights = np.exp(-np.power(dist_knn,2)/lambdaa)
+            mk_stochastic!(weights)
+        end
+
+#=
         
         # for each member/particle
         for i_N in range(0,N):
@@ -171,13 +177,13 @@ function ( af :: AnalogForecasting)(x :: Array{T,2}) where T
 
 =#
         # stop condition
-        if all(i_var .== n-1) && length(i_var) == n && i_var > 10
+        if all(i_var .== n) && length(i_var) == n
 
             stop_condition = true
              
         else
 
-            i_var += 1
+            i_var .+= 1
 
         end
 
