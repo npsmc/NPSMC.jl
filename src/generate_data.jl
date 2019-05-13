@@ -1,11 +1,32 @@
+using DifferentialEquations, Distributions
 using Random, LinearAlgebra
 
 export TimeSeries
 
-mutable struct TimeSeries
+mutable struct TimeSeries{T}
 
-   time   :: Vector{Real}
-   values :: Array{Union{Real,Missing},2}
+   nt     :: Integer
+   nv     :: Integer
+   time   :: Vector{T}
+   values :: Array{T, 2}
+
+   function TimeSeries{T}( nt :: Integer, nv :: Integer) where T
+ 
+       time   = zeros(T, nt)
+       values = zeros(T, (nt, nv))
+
+       new( nt, nv, time, values)
+
+   end
+
+   function TimeSeries( time   :: Array{T, 1}, 
+                        values :: Array{T, 2}) where T
+ 
+       nt, nv = size(values)
+
+       new{T}( nt, nv, time, values)
+
+   end
 
 end
 
@@ -13,30 +34,46 @@ export StateSpace
 
 struct StateSpace
 
-    dt_integration :: Real
-    dt_states      :: Int
-    dt_obs         :: Int
-    params         :: Vector{Real}
-    var_obs        :: Vector{Int64}
-    nb_loop_train  :: Int
-    nb_loop_test   :: Int
-    sigma2_catalog :: Real
-    sigma2_obs     :: Real
+    dt_integration :: AbstractFloat
+    dt_states      :: Integer
+    dt_obs         :: Integer
+    params         :: Vector{AbstractFloat}
+    var_obs        :: Vector{Integer}
+    nb_loop_train  :: Integer
+    nb_loop_test   :: Integer
+    sigma2_catalog :: AbstractFloat
+    sigma2_obs     :: AbstractFloat
     
 end
 
 export Catalog
 
-mutable struct Catalog
+mutable struct Catalog{T}
 
-   analogs    :: Array{Real,2}
-   successors :: Array{Real,2}
+   data       :: Array{T,2}
+   analogs    :: AbstractArray{T,2}
+   successors :: AbstractArray{T,2}
    sources    :: StateSpace
+
+   function Catalog( data :: Array{T,2}, ssm :: StateSpace) where T
+
+       analogs    = @view data[1:end-ssm.dt_states,:]
+       successors = @view data[ssm.dt_states:end,:]
+
+       new{T}( data, analogs, successors, ssm)
+
+   end
 
 end
 
 export generate_data
 
+"""
+from StateSpace generate:
+ - true state (xt)
+ - partial/noisy observations (yo)
+ - catalog
+"""
 function generate_data( ssm )
 
     @assert ssm.dt_states < ssm.dt_obs
@@ -85,9 +122,7 @@ function generate_data( ssm )
         catalog_tmp .+= eta'
     end
 
-    Catalog( catalog_tmp[1:end-ssm.dt_states,:],
-             catalog_tmp[ssm.dt_states:end,:], 
-             ssm )
+    xt, yo, Catalog( catalog_tmp, ssm )
 
 end
 
