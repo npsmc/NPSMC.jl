@@ -19,13 +19,14 @@ struct DataAssimilation{T}
 
     function DataAssimilation( method :: Symbol, 
                                N      :: Integer, 
-                               xt     :: TimeSeries{T}) where T
+                               xt     :: TimeSeries{T},
+                               sigma2 :: Float64 ) where T
                 
         xb = xt.values[1,:]
         B  = 0.1 * Matrix(I, xt.nv, xt.nv)
         H  = Matrix( I, xt.nv, xt.nv)
 
-        R  = sigma2_obs .* H
+        R  = sigma2 .* H
 
         new{T}(  method, N, xb, B, H, R, m )
 
