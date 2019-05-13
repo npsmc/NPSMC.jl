@@ -6,3 +6,6 @@ Manifest.toml
 *.swp
 test/.ipynb_checkpoints/test_generate_data-checkpoint.jl
 .ipynb_checkpoints/
+analog_forecasting.ipynb
+time_series.ipynb
+catalog.ipynb
