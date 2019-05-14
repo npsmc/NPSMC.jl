@@ -38,6 +38,6 @@ xt, yo, catalog = generate_data( ssm )
 
 af = AnalogForecasting( 5, xt, catalog )
 
-da = DataAssimilation( :AnEnKS, 10, xt, ssm.sigma2_obs )
+da = DataAssimilation( af, :AnEnKS, 10, xt, ssm.sigma2_obs )
 
 end
