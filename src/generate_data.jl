@@ -92,7 +92,7 @@ function generate_data( ssm )
     prob = ODEProblem(lorenz63, x0, tspan, p)
     
     # generSate true state (xt)
-    sol = solve(prob,reltol=1e-6,saveat=ssm.dt_states)
+    sol = solve(prob,reltol=1e-6,saveat=ssm.dt_states*ssm.dt_integration)
     xt  = TimeSeries(sol.t, vcat(sol.u'...))
     
     # generate  partial/noisy observations (yo)
@@ -102,9 +102,9 @@ function generate_data( ssm )
     
     yo   = TimeSeries( xt.time, xt.values .* NaN)
     step = ssm.dt_obs ÷ ssm.dt_states
-    n    = length(xt.time)
+    nt   = length(xt.time)
     for j in ssm.var_obs
-        for i in 1:step:n
+        for i in 1:step:nt
             yo.values[i,j] = xt.values[i,j] + eps[j,i]
         end
     end
@@ -113,7 +113,7 @@ function generate_data( ssm )
     x0 = last(sol)
     tspan = (0.0,ssm.nb_loop_train)
     prob = ODEProblem(lorenz63, x0, tspan, p)
-    sol = solve(prob,reltol=1e-6,saveat= ssm.dt_integration)
+    sol = solve(prob,reltol=1e-6,saveat= ssm.dt_integration*ssm.dt_integration)
     n = length(sol.t)
     catalog_tmp = vcat(sol.u'...) 
     if ssm.sigma2_catalog > 0
