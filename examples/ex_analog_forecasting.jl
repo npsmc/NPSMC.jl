@@ -43,9 +43,7 @@ xt, yo, catalog = generate_data( ssm )
 # -
 
 
-af = AnalogForecasting( 5, xt, catalog, 
-                        regression = :local_linear, 
-                        sampling = :gaussian )
+af = AnalogForecasting( 5, xt, catalog )
 
 
 
