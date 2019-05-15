@@ -13,8 +13,8 @@
 #     name: julia-1.1
 # ---
 
-include("src/models.jl")
-include("src/generate_data.jl")
+include("../src/models.jl")
+include("../src/generate_data.jl")
 
 nt, nv = 10, 3
 xt = TimeSeries{Float64}(nt, nv)

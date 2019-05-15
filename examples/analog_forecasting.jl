@@ -14,8 +14,9 @@
 #     name: julia-1.1
 # ---
 
-include("src/models.jl")
-include("src/generate_data.jl")
+include("../src/models.jl")
+include("../src/generate_data.jl")
+include("../src/analog_forecasting.jl")
 
 
 # +
@@ -42,8 +43,9 @@ xt, yo, catalog = generate_data( ssm )
 # -
 
 
-include("src/analog_forecasting.jl")
-af = AnalogForecasting( 5, xt, catalog, regression = :local_linear, sampling = :gaussian )
+af = AnalogForecasting( 5, xt, catalog, 
+                        regression = :local_linear, 
+                        sampling = :gaussian )
 
 
 

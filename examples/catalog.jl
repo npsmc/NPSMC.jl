@@ -14,8 +14,8 @@
 #     name: julia-1.1
 # ---
 
-include("src/models.jl")
-include("src/generate_data.jl")
+include("../src/models.jl")
+include("../src/generate_data.jl")
 
 # +
 σ = 10.0
@@ -46,5 +46,3 @@ using Plots
 plot(catalog.analogs)
 plot!(catalog.successors)
 # -
-
-
