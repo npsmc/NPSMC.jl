@@ -36,17 +36,17 @@ struct DataAssimilation{T}
 end
 
     
-function data_assimilation(yo, DA)
+function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
     """ 
     Apply stochastic and sequential data assimilation technics using 
     model forecasting or analog forecasting. 
     """
 
     # dimensions
-    n = length(DA.xb)
+    n = length(da.xb)
     T, p = size(yo.values)
     # check dimensions
-    @assert p == size(DA.R)[0]
+    @assert p == size(da.R)[0]
 #=
 
     # initialization

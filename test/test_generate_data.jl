@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-using DifferentialEquations, Distributions
-using Random, LinearAlgebra
-
 @testset " Generate data for Lorenz-63 model " begin
 
     σ = 10.0
@@ -28,4 +24,3 @@ using Random, LinearAlgebra
     @test true
 
 end
-

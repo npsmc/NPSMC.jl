@@ -1,4 +1,5 @@
-using DifferentialEquations, Distributions
+using DifferentialEquations
+using Distributions
 using Random, LinearAlgebra
 
 export TimeSeries

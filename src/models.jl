@@ -1,5 +1,3 @@
-using DifferentialEquations
-
 export lorenz63
 
 """ 
