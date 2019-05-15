@@ -1,6 +1,7 @@
-using DifferentialEquations
-using Distributions
 using Random, LinearAlgebra
+
+import DifferentialEquations: ODEProblem, solve
+import Distributions: MvNormal, rand
 
 export TimeSeries
 
