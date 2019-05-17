@@ -88,28 +88,29 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
         end
 
         xf_part[k,:,:] .= xf
-        Ef = xf' * (Matrix(I, da.N, da.N) .- 1./da.N)
-        Pf[k,:,:] = (Ef * Ef.T) ./ (da.N-1)
+        Ef = xf' * (Matrix(I, da.N, da.N) .- 1/da.N)
+        Pf[k,:,:] .= (Ef * Ef.T) ./ (da.N-1)
         # analysis step (correct forecasts with observations)          
-        i_var_obs = yo.values[k,:])
+        i_var_obs = findall(.!isnan.(values[k,:]))
 
         if length(i_var_obs)>0
-            eps = np.random.multivariate_normal(np.zeros_like(i_var_obs),da.R[np.ix_(i_var_obs,i_var_obs)],da.N)
+            d   = MvNormal( da.R[i_var_obs,i_var_obs],da.N)
+            eps = rand(d, da.N)
             yf = (da.H[i_var_obs,:] * xf.T)'
-            SIGMA = ((da.H[i_var_obs,:] * Pf[k,:,:]) * da.H[i_var_obs,:].T)+da.R[np.ix_(i_var_obs,i_var_obs)]
+            SIGMA = ((da.H[i_var_obs,:] * Pf[k,:,:]) * da.H[i_var_obs,:].T)+da.R[i_var_obs,i_var_obs]
             SIGMA_INV = inv(SIGMA)
             K = np.dot(np.dot(Pf[k,:,:],da.H[i_var_obs,:].T),SIGMA_INV)
-            d = yo.values[k,i_var_obs][np.newaxis]+eps-yf
-            x̂.part[k,:,:] = xf + (d * K.T)
+            d = yo.values[k,i_var_obs]' .+ eps .- yf
+            x̂.part[k,:,:] .= xf .+ (d * K.T)
             # compute likelihood
             innov_ll = mean(yo.values[k,i_var_obs]' .- yf,dims=1)
-            loglik = -0.5*(np.dot(np.dot(innov_ll.T,SIGMA_INV),innov_ll))-0.5*(n*log.(2*pi)+log.(det(SIGMA)))
+            loglik = -0.5*((innov_ll' * SIGMA_INV) * innov_ll) .- 0.5*(n*log.(2*pi)+log.(det(SIGMA)))
         else
-            x̂.part[k,:,:] = xf          
+            x̂.part[k,:,:] .= xf
         end
 
-        x̂.weights[k,:] = 1.0/da.N
-        x̂.values[k,:]  = sum(x̂.part[k,:,:]*x̂.weights[k,:,np.newaxis],dims=1)
+        x̂.weights[k,:] .= 1.0/da.N
+        x̂.values[k,:]  .= sum(x̂.part[k,:,:]*x̂.weights[k,:,np.newaxis],dims=1)
         x̂.loglik[k]    = loglik
 
     end 
