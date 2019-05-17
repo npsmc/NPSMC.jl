@@ -100,7 +100,7 @@ function ( af :: AnalogForecasting)(x :: Array{T,2}) where T
     i_var          = [1]
     
     # local or global analog forecasting
-    while !stop_condition
+    #while !stop_condition
 
         if all(af.neighborhood) # in case of global approach
             i_var_neighboor = collect(1:n)
@@ -112,12 +112,13 @@ function ( af :: AnalogForecasting)(x :: Array{T,2}) where T
             
         # find the indices and distances of the k-nearest neighbors (knn)
         kdt = KDTree(af.catalog.analogs[:,i_var_neighboor], 
-                     leaf_size=50)
+                     leafsize=50)
 
         dist_knn, index_knn = knn(kdt, x[:,i_var_neighboor], af.k)
         
         # parameter of normalization for the kernels
-        lambdaa = median(dist_knn)
+        @show lambdaa = median(dist_knn)
+        exit(0)
 
         # compute weights
         if af.k == 1
@@ -181,7 +182,7 @@ function ( af :: AnalogForecasting)(x :: Array{T,2}) where T
             d = MvNormal(xf_mean[i_N,i_var],cov_xf)
             rand!(d, xf[i_N,i_var])
 
-        end
+        #end
             
 
         # stop condition

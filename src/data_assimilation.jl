@@ -1,13 +1,15 @@
+# -*- coding: utf-8 -*-
 using LinearAlgebra
 
 export DataAssimilation
 
+# +
 """
 parameters of the filtering method
  - method :chosen method ('AnEnKF', 'AnEnKS', 'AnPF')
  - N : number of members (AnEnKF/AnEnKS) or particles (AnPF)
 """
-struct DataAssimilation{T}
+mutable struct DataAssimilation{T}
 
     method :: Symbol
     N      :: Int64
@@ -32,8 +34,8 @@ struct DataAssimilation{T}
 
     end
 
-    
 end
+# -
 
 struct Xhat
 
@@ -43,7 +45,9 @@ struct Xhat
     loglik  :: Array{Float64, 1}
     time    :: Array{Float64, 1}
 
-    function Xhat( time :: Vector{Float64}, N :: Int64, n :: Int64)
+    function Xhat( time :: Vector{Float64}, 
+                   N    :: Int64, 
+                   n    :: Int64)
 
         T = length(time)
 
@@ -56,20 +60,22 @@ struct Xhat
 
     end
 end
-    
+
+# +
 """ 
     data_assimilation( yo, da)
 
 Apply stochastic and sequential data assimilation technics using 
 model forecasting or analog forecasting. 
 """
-function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
+function data_assimilation(yo :: TimeSeries, 
+        da :: DataAssimilation)
 
     # dimensions
-    n = length(da.xb)
-    T, p = size(yo.values)
+    @show n = length(da.xb)
+    @show T, p = size(yo.values)
     # check dimensions
-    @assert p == size(da.R)[0]
+    @assert p == size(da.R)[1]
 
     # initialization
     x̂ = Xhat( yo.time, N, n )
@@ -78,15 +84,17 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
     xf_part   = zeros(Float64, (T,da.N,n))
     Pf        = zeros(Float64, (T,n,n))
 
-    for k in 1:T
+    for k in 2:T
         # update step (compute forecasts)            
         if k == 0
-            xf = np.random.multivariate_normal(da.xb, da.B, da.N)
+            d = MvNormal(da.xb, da.B)
+            xf = rand(d, da.N)
         else
-            xf, m_xa_part_tmp = da.m(x̂.part[k-1,:,:])
+            xf, m_xa_part_tmp = da.m(x̂.part[k,:,:])
             m_xa_part[k,:,:] = m_xa_part_tmp         
         end
-
+        @show xf
+        return
         xf_part[k,:,:] .= xf
         Ef = xf' * (Matrix(I, da.N, da.N) .- 1/da.N)
         Pf[k,:,:] .= (Ef * Ef.T) ./ (da.N-1)
@@ -133,3 +141,6 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
     x̂       
 
 end
+# -
+
+
