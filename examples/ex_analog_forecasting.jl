@@ -9,14 +9,19 @@
 #       format_version: '1.4'
 #       jupytext_version: 1.1.2
 #   kernelspec:
-#     display_name: Julia 1.1.1
+#     display_name: Julia 1.1.0
 #     language: julia
 #     name: julia-1.1
 # ---
 
 using LinearAlgebra
 include("../src/models.jl")
+include("../src/time_series.jl")
+include("../src/state_space.jl")
+include("../src/catalog.jl")
 include("../src/generate_data.jl")
+
+?StateSpaceModel
 
 # +
 σ = 10.0
@@ -33,71 +38,14 @@ nb_loop_test   = 1
 sigma2_catalog = 0.0
 sigma2_obs     = 2.0
 
-ssm = StateSpace( dt_integration, dt_states, dt_obs, 
-                  parameters, var_obs,
-                  nb_loop_train, nb_loop_test,
-                  sigma2_catalog, sigma2_obs )
+ssm = StateSpaceModel( dt_integration, dt_states, dt_obs, 
+                       parameters, var_obs,
+                       nb_loop_train, nb_loop_test,
+                       sigma2_catalog, sigma2_obs )
 
 xt, yo, catalog = generate_data( ssm )
-# + {}
-"""
-parameters of the filtering method
- - method :chosen method ('AnEnKF', 'AnEnKS', 'AnPF')
- - N : number of members (AnEnKF/AnEnKS) or particles (AnPF)
-"""
-mutable struct DataAssimilation{T}
-
-    method :: Symbol
-    N      :: Int64
-    xb     :: Vector{T}
-    B      :: Array{Float64, 2}
-    H      :: Array{Bool,    2}
-    R      :: Array{Float64, 2}
-    m      :: AnalogForecasting
-
-    function DataAssimilation( m      :: AnalogForecasting,
-                               method :: Symbol, 
-                               N      :: Int64, 
-                               xt     :: TimeSeries{T},
-                               sigma2 :: Float64 ) where T
-                
-        xb = xt.values[1,:]
-        B  = 0.1 * Matrix(I, xt.nv, xt.nv)
-        H  = Matrix( I, xt.nv, xt.nv)
-        R  = sigma2 .* H
-
-        new{T}(  method, N, xb, B, H, R, m )
-
-    end
-
-end
 # -
-
-struct Xhat
-
-    part    :: Array{Float64, 3}
-    weights :: Array{Float64, 2}
-    values  :: Array{Float64, 2}
-    loglik  :: Array{Float64, 1}
-    time    :: Array{Float64, 1}
-
-    function Xhat( time :: Vector{Float64}, 
-                   N    :: Int64, 
-                   n    :: Int64)
-
-        T = length(time)
-
-        part    = zeros(Float64, (T,N,n))
-        weights = zeros(Float64, (T,N))
-        values  = zeros(Float64, (T,n))
-        loglik  = zeros(Float64, T)
-
-        new( part, weights, values, loglik, time)
-
-    end
-end
-
-include("../src/analog_forecasting.jl")
+include("../src/model_forecasting.jl")
 af = AnalogForecasting( 5, xt, catalog )
 N = 10
 da = DataAssimilation( af, :EnKs, N, xt, ssm.sigma2_obs)

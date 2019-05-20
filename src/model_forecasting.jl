@@ -1,24 +1,47 @@
+export AbstractForecasting
+
+abstract type AbstractForecasting end
+
+export ModelForecasting
+
+struct ModelForecasting <: AbstractForecasting
+
+    dt     :: Float64
+    params :: Vector{Float64}
+
+    function ModelForecasting( ssm :: StateSpaceModel )
+
+        new( ssm.dt_integration, ssm.params )
+
+    end
+
+
+end
+
 """ 
     Apply the dynamical models to generate numerical forecasts. 
 """
-function model_forecasting(x, GD)
+function ( m :: ModelForecasting )( x :: Array{Float64, 2})
 
-    # initializations
-    N, n    = size(x)
-    xf      = zeros(Float64, (N,n))
+    np, nv = size(x)
+    @assert nv == 3 
+    p     = m.params
+    tspan = (0.0, m.dt)
+    x0    = [8.0;0.0;30.0]
 
-    tspan = (0.0,5.0)
-    p = [10.0,28.0,8/3]
-    prob = ODEProblem(lorenz63, x0, tspan, p)
+    prob  = ODEProblem( lorenz63, x0, tspan, p)
 
-    for i_N in 1:N
-        x0 = x[i_N,:]
-        S   = odeint(lorenz63, x[i_N,:],
-                   np.arange(0,GD.dt_integration+0.000001,GD.dt_integration),
-            args=(GD.parameters.sigma,GD.parameters.rho,GD.parameters.beta))
-        xf[i_N,:] = S[-1,:]
+    function prob_func( prob, i, repeat)
+        prob.u0 .= x[i,:]
+        prob
     end
 
-    xf, xf
+    monte_prob = MonteCarloProblem(prob, prob_func=prob_func)
+
+    sim = solve(monte_prob, Tsit5(), num_monte=np, save_everystep=false)
+
+    xf = [last(sim[i].u) for i in 1:np]
+
+    vcat(xf'...)
             
 end

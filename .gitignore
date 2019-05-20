@@ -10,3 +10,4 @@ analog_forecasting.ipynb
 time_series.ipynb
 catalog.ipynb
 examples/ex_analog_forecasting.ipynb
+examples/test_monte_carlo.ipynb
