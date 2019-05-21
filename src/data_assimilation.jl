@@ -79,7 +79,7 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
 
     m_xa_part     = zeros(Float64, (nt,np,nv))
     xf_part       = zeros(Float64, (nt,np,nv))
-    pf            = zeros(Float64, (nt,np,np))
+    pf            = zeros(Float64, (nt,nv,nv))
     m_xa_part_tmp = zeros(Float64, (np,nv))
     xf            = zeros(Float64, (np,nv))
 
@@ -98,33 +98,35 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
 
         xf_part[k,:,:] .= xf
 
-        ef = xf' * (Matrix(I, np, np) .- 1 / np)
+        ef = xf' * (Matrix(I, DA.N, DA.N) .- 1/DA.N)
 
-        pf[k,:,:] .= (ef' * ef) ./ (np-1)
+        pf[k,:,:] .= (ef * ef') ./ (np-1)
         # analysis step (correct forecasts with observations)          
         i_var_obs = findall(.!isnan.(yo.values[k,:]))
-        return i_var_obs
+        n = length(i_var_obs)
 
-#        if length(i_var_obs)>0
-#            d   = MvNormal( da.R[i_var_obs,i_var_obs],da.N)
-#            eps = rand(d, da.N)
-#            yf = (da.H[i_var_obs,:] * xf.T)'
-#            SIGMA = ((da.H[i_var_obs,:] * Pf[k,:,:]) * da.H[i_var_obs,:].T)+da.R[i_var_obs,i_var_obs]
-#            SIGMA_INV = inv(SIGMA)
-#            K = np.dot(np.dot(Pf[k,:,:],da.H[i_var_obs,:].T),SIGMA_INV)
-#            d = yo.values[k,i_var_obs]' .+ eps .- yf
-#            x̂.part[k,:,:] .= xf .+ (d * K.T)
-#            # compute likelihood
-#            innov_ll = mean(yo.values[k,i_var_obs]' .- yf,dims=1)
-#            loglik = -0.5*((innov_ll' * SIGMA_INV) * innov_ll) .- 0.5*(n*log.(2*pi)+log.(det(SIGMA)))
-#        else
-#            x̂.part[k,:,:] .= xf
-#        end
-#
-#        x̂.weights[k,:] .= 1.0/da.N
-#        x̂.values[k,:]  .= sum(x̂.part[k,:,:]*x̂.weights[k,:,np.newaxis],dims=1)
-#        x̂.loglik[k]    = loglik
-#
+        if n > 0
+            μ   = zeros(Float64, n)
+            σ   = da.R[i_var_obs,i_var_obs]
+            eps = rand(MvNormal( μ, σ), np)'
+            yf  = (da.H[i_var_obs,:] * xf')'
+            SIGMA = (DA.H[i_var_obs,:] * Pf[k,:,:]) * DA.H[i_var_obs,:]' + DA.R[i_var_obs,i_var_obs]
+            SIGMA_INV = inv(SIGMA)
+            K = Pf[k,:,:] * DA.H[i_var_obs,:]' * SIGMA_INV 
+            d = yo.values[k,i_var_obs] .+ eps .- yf
+            x_hat.part[k,:,:] = xf + d * K'
+            # compute likelihood
+            innov_ll = mean(yo.values[k,i_var_obs] .- yf, dims=1)
+            loglik = -0.5 .* (dot((innov_ll' * SIGMA_INV), innov_ll) 
+                              .- (n * log.(2*pi) .+ log(det(SIGMA))))
+        else
+            x̂.part[k,:,:] .= xf
+        end
+
+        x̂.weights[k,:] .= 1.0/da.N
+        x̂.values[k,:]  .= vec(sum(x̂.part[k,:,:] .* x̂.weights[k,:],dims=1))
+        x̂.loglik[k]    .= loglik
+
     end 
     
     
