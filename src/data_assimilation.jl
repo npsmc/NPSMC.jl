@@ -52,7 +52,7 @@ struct Xhat
         time    = x.time
         part    = zeros(Float64, (nt,np,nv))
         weights = zeros(Float64, (nt,np))
-        values  = zeros(Float64, (nt,np))
+        values  = zeros(Float64, (nt,nv))
         loglik  = zeros(Float64,  nt)
 
         new( part, weights, values, loglik, time)
@@ -86,7 +86,7 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
     # Intiatize multivariate distribution
     d  = MvNormal(da.xb, da.B)
 
-    for k in 1:1
+    for k in 1:nt
         # update step (compute forecasts)            
         if k == 1
             xf = da.xb' .+ rand(d, np)'
@@ -98,7 +98,7 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
 
         xf_part[k,:,:] .= xf
 
-        ef = xf' * (Matrix(I, DA.N, DA.N) .- 1/DA.N)
+        ef = xf' * (Matrix(I, np, np) .- 1/np)
 
         pf[k,:,:] .= (ef * ef') ./ (np-1)
         # analysis step (correct forecasts with observations)          
@@ -110,39 +110,40 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
             σ   = da.R[i_var_obs,i_var_obs]
             eps = rand(MvNormal( μ, σ), np)'
             yf  = (da.H[i_var_obs,:] * xf')'
-            SIGMA = (DA.H[i_var_obs,:] * Pf[k,:,:]) * DA.H[i_var_obs,:]' + DA.R[i_var_obs,i_var_obs]
+            SIGMA  = (da.H[i_var_obs,:] * pf[k,:,:]) * da.H[i_var_obs,:]' 
+            SIGMA += da.R[i_var_obs,i_var_obs]
             SIGMA_INV = inv(SIGMA)
-            K = Pf[k,:,:] * DA.H[i_var_obs,:]' * SIGMA_INV 
+            K = pf[k,:,:] * da.H[i_var_obs,:]' * SIGMA_INV 
             d = yo.values[k,i_var_obs] .+ eps .- yf
-            x_hat.part[k,:,:] = xf + d * K'
+            x̂.part[k,:,:] = xf + d * K'
             # compute likelihood
             innov_ll = mean(yo.values[k,i_var_obs] .- yf, dims=1)
             loglik = -0.5 .* (dot((innov_ll' * SIGMA_INV), innov_ll) 
-                              .- (n * log.(2*pi) .+ log(det(SIGMA))))
+                        .- (n * log.(2*pi) .+ log(det(SIGMA))))
         else
             x̂.part[k,:,:] .= xf
+            loglik         = 0.0
         end
 
-        x̂.weights[k,:] .= 1.0/da.N
+        x̂.weights[k,:] .= 1.0/np
         x̂.values[k,:]  .= vec(sum(x̂.part[k,:,:] .* x̂.weights[k,:],dims=1))
-        x̂.loglik[k]    .= loglik
+        x̂.loglik[k]     = loglik
 
     end 
     
-    
-#    for k in T:-1:1          
-#        if k == T
-#            x̂.part[k,:,:] .= x̂.part[T,:,:]
-#        else
-#            m_xa_part_tmp = m_xa_part[k+1,:,:]
-#            tej, m_xa_tmp = da.m(mean(x̂.part[k,:,:],dims=1))
-#            tmp_1 =(x̂.part[k,:,:] .- mean(x̂.part[k,:,:],dims=1))
-#            tmp_2 = m_xa_part_tmp .- m_xa_tmp
-#            Ks = 1.0/(da.N-1) * ((tmp_1 * tmp_2) * inv_using_SVD(Pf[k+1,:,:],0.9999))
+    for k in nt:-1:1          
+        if k == nt
+            x̂.part[k,:,:] .= x̂.part[nt,:,:]
+        else
+            m_xa_part_tmp = m_xa_part[k+1,:,:]
+            tej, m_xa_tmp = da.m(mean(x̂.part[k,:,:],dims=1))
+            tmp_1 =(x̂.part[k,:,:] .- mean(x̂.part[k,:,:],dims=1))
+            tmp_2 = m_xa_part_tmp .- m_xa_tmp
+            #Ks = 1.0/(np-1) * ((tmp_1 * tmp_2) * inv_using_SVD(pf[k+1,:,:],0.9999))
 #            x̂.part[k,:,:] .+= (x̂.part[k+1,:,:] .- xf_part[k+1,:,:]) * Ks'
-#        end
-#        x̂.values[k,:] = sum(x̂.part[k,:,:] .* x̂.weights[k,:]',dims=1)
-#    end
+        end
+        x̂.values[k,:] .= vec(sum(x̂.part[k,:,:] .* x̂.weights[k,:], dims=1))
+    end
     
     x̂       
 
