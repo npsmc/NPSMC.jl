@@ -1,4 +1,4 @@
-using Statistics
+using Statistics, LinearAlgebra
 
 " Compute the Root Mean Square Error between 2 n-dimensional vectors. "
 function RMSE(a, b)
@@ -53,3 +53,31 @@ function sample_discrete(prob)
     M
 end
 
+
+""" 
+    inv_using_SVD(Mat, eigvalMax)
+
+SVD decomposition of Matrix. 
+"""
+function inv_using_SVD(Mat, eigvalMax)
+    
+    F = svd(Mat; full = true)
+    eigval = cumsum(F.S) ./ sum(F.S)
+    # search the optimal number of eigen values
+    i_cut = findfirst(eigval .>= eigvalMax)
+
+    U_1 = @view F.U[1:i_cut,1:i_cut]
+    U_3 = @view F.U[min(i_cut+1,end):end,1:i_cut]
+    
+    V_1 = @view F.Vt'[1:i_cut,1:i_cut]
+    V_3 = @view F.Vt'[min(i_cut+1,end):end,1:i_cut]
+
+    tmp1 = (V_1 ./ F.S[1:i_cut]') * U_1'
+    tmp2 = (V_1 ./ F.S[1:i_cut]') * U_3'
+    tmp3 = (V_3 ./ F.S[1:i_cut]') * U_1'
+    tmp4 = (V_3 ./ F.S[1:i_cut]') * U_3'
+
+    vcat(hcat(tmp1,tmp2),hcat(tmp3,tmp4))
+    
+end
+    
