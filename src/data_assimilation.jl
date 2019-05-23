@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 using LinearAlgebra
+using ProgressMeter
 
 export DataAssimilation
 
@@ -83,15 +84,13 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
     m_xa_part_tmp = zeros(Float64, (np,nv))
     xf            = zeros(Float64, (np,nv))
 
-    # Intiatize multivariate distribution
-    d  = MvNormal(da.xb, da.B)
 
-    for k in 1:nt
+    @showprogress 1 for k in 1:nt
         # update step (compute forecasts)            
         if k == 1
-            xf = da.xb' .+ rand(d, np)'
+            xf = da.xb' .+ rand(MvNormal(da.xb, da.B), np)'
         else
-            xf                .=  da.m(x̂.part[k,:,:])
+            xf          .=  da.m(x̂.part[k-1,:,:])
             m_xa_part_tmp     .=  xf
             m_xa_part[k,:,:]  .=  xf
         end
@@ -101,6 +100,7 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
         ef = xf' * (Matrix(I, np, np) .- 1/np)
 
         pf[k,:,:] .= (ef * ef') ./ (np-1)
+
         # analysis step (correct forecasts with observations)          
         i_var_obs = findall(.!isnan.(yo.values[k,:]))
         n = length(i_var_obs)
@@ -131,16 +131,16 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
 
     end 
     
-    for k in nt:-1:1          
+    @showprogress 1 for k in nt:-1:1          
         if k == nt
             x̂.part[k,:,:] .= x̂.part[nt,:,:]
         else
             m_xa_part_tmp = m_xa_part[k+1,:,:]
             tej, m_xa_tmp = da.m(mean(x̂.part[k,:,:],dims=1))
-            tmp_1 =(x̂.part[k,:,:] .- mean(x̂.part[k,:,:],dims=1))
-            tmp_2 = m_xa_part_tmp .- m_xa_tmp
-            #Ks = 1.0/(np-1) * ((tmp_1 * tmp_2) * inv_using_SVD(pf[k+1,:,:],0.9999))
-#            x̂.part[k,:,:] .+= (x̂.part[k+1,:,:] .- xf_part[k+1,:,:]) * Ks'
+            tmp1 =(x̂.part[k,:,:] .- mean(x̂.part[k,:,:],dims=1))'
+            tmp2 = m_xa_part_tmp .- m_xa_tmp
+            Ks   = 1.0 ./(np-1) .* ((tmp1 * tmp2) * inv_using_SVD(pf[k+1,:,:],0.9999))
+            x̂.part[k,:,:] .+= (x̂.part[k+1,:,:] .- xf_part[k+1,:,:]) * Ks'
         end
         x̂.values[k,:] .= vec(sum(x̂.part[k,:,:] .* x̂.weights[k,:], dims=1))
     end
