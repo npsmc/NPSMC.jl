@@ -14,6 +14,7 @@
 #     name: julia-1.1
 # ---
 
+using Plots
 using LinearAlgebra
 using Distributions, LinearAlgebra
 using DifferentialEquations
@@ -36,8 +37,8 @@ dt_states      = 1
 dt_obs         = 8 
 parameters     = [σ, ρ, β]
 var_obs        = [1]
-nb_loop_train  = 30 
-nb_loop_test   = 1
+nb_loop_train  = 100 
+nb_loop_test   = 10
 sigma2_catalog = 0.0
 sigma2_obs     = 2.0
 
@@ -47,30 +48,38 @@ ssm = StateSpaceModel( dt_integration, dt_states, dt_obs,
                        sigma2_catalog, sigma2_obs )
 
 xt, yo, catalog = generate_data( ssm )
-# + {}
+# -
+# state and observations (when available)
+plot(xt.time,xt.values[:,1], line=(:solid,:red), label="xt")
+obs = findall(.!isnan.(yo.values))
+scatter!(yo.time[obs],yo.values[obs],  label="yo")
+plot!(xt.time,xt.values[:,2], line=(:solid,:blue), label="x₂")
+#plot!(yo.time,yo.values[:,2], line=(:dot,:blue) )
+plot!(xt.time,xt.values[:,3], line=(:solid,:green), label="x₃")
+#plot!(yo.time,yo.values[:,3], line=(:dot,:green))
+xlabel!("Lorenz-63 times")
+title!("Lorenz-63 true (continuous lines) and observed trajectories (points)")
+
+# +
 include("../src/model_forecasting.jl")
 
 mf = ModelForecasting( ssm )
+
 # -
 
-μ = [0.,0.,0]
-σ = 0.1 .* Matrix(I,3,3)
-d = MvNormal(μ, σ)
-np = 10
-x = [8.0 0.0 30.0] .+ rand(d, np)'
-mf(x)
-
-xb = xt.values[1,:]
-xf = xb' .+ rand(d, np)'
-
-
+include("../src/utils.jl")
 include("../src/data_assimilation.jl")
+np = 100
 da = DataAssimilation( mf, :EnKs, np, xt, ssm.sigma2_obs)
-data_assimilation(yo, da)
+x̂ = data_assimilation(yo, da)
 
-# -
+scatter(x̂.values)
+plot!(xt.values)
 
-findall(.!isnan.(yo.values[k,1]))
-
+p = plot3d(1, xlim=(-25,25), ylim=(-25,25), zlim=(0,50),
+                title = "Lorenz 63", marker = 2)
+@gif for i=1:1000
+    push!(p, x̂.values[i,:]...)
+end
 
 
