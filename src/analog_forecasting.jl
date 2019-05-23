@@ -11,7 +11,7 @@ parameters of the analog forecasting method
 - regression : chosen regression ('locally_constant', 'increment', 'local_linear')
 - sampling : chosen sampler ('gaussian', 'multinomial')
 """
-struct AnalogForecasting <: AbstractForecasting
+mutable struct AnalogForecasting <: AbstractForecasting
 
     k             :: Int64 # number of analogs
     neighborhood  :: BitArray{2}
@@ -40,108 +40,121 @@ end
 """
 function ( af :: AnalogForecasting)(x :: Array{T,2}) where T
 
-    N, n           = size(x)
-    xf             = zeros(T, (N,n))
-    xf_mean        = zeros(T, (N,n))
+    np, nv         = size(x)
+    xf             = zeros(T, (np,nv))
+    xf_mean        = zeros(T, (np,nv))
+    ivar           = [1]
     stop_condition = false
-    i_var          = [1]
     
     # local or global analog forecasting
-    #while !stop_condition
+    while !stop_condition
 
         if all(af.neighborhood) # in case of global approach
-            i_var_neighboor = collect(1:n)
-            i_var           = collect(1:n)
-            stop_condition  = true
+            ivar_neighboor = collect(1:nv)
+            ivar           = collect(1:nv)
+            stop_condition = true
         else                    # in case of local approach
-            i_var_neighboor = af.neighborhood[i_var,:] 
+            ivar_neighboor = af.neighborhood[ivar,:] 
         end
             
         # find the indices and distances of the k-nearest neighbors (knn)
-        kdt = KDTree(af.catalog.analogs[:,i_var_neighboor], 
-                     leafsize=50)
+        nc = size(af.catalog.analogs)
+        data = zeros(Float64,(nc[2],nc[1]))
+        for i in 1:nc[1], j in 1:nc[2]
+            data[j,i] =  af.catalog.analogs[i,j]
+        end
 
-        dist_knn, index_knn = knn(kdt, x[:,i_var_neighboor], af.k)
+        kdt = KDTree(data, leafsize=50)
+
+        nc = size(x)
+        points = zeros(Float64,(nc[2],nc[1]))
+        for i in 1:nc[1], j in 1:nc[2]
+            points[j,i] =  x[i,j]
+        end
+
+        dist_knn, index_knn = knn(kdt, points, af.k)
         
         # parameter of normalization for the kernels
-        @show lambdaa = median(dist_knn)
-        exit(0)
+        λ = median(Iterators.flatten(dist_knn))
 
         # compute weights
         if af.k == 1
-            weights = ones(Float64,(N,1))
+            weights = ones(Float64,(np,1))
         else
-            weights = np.exp(-np.power(dist_knn,2)/lambdaa)
+            weights = [exp(-d^2 / λ) for d in Iterators.flatten(dist_knn)]
             mk_stochastic!(weights)
         end
 
-        # for each member/particle
-        for i_N in 1:N
-            
-            # initialization
-            xf_tmp = zeros((af.k,maximum(i_var)))
-         
-            # define analogs, successors and weights
-            X = [af.catalog.analogs[i,j] 
-                    for i in index_knn[i_N,:], j in i_var_neighboor ]                
-            Y = [af.catalog.successors[i,j] 
-                    for i in index_knn[i_N,:], j in i_var]                
+        @show weights
 
-            w = weights[i_N,:]'
-            
-            # compute centered weighted mean and weighted covariance
-            Xm = sum(X .* w', dims=1)
-            Xc = X - Xm
-            
-            # use SVD decomposition to compute principal components
-            F = svd(Xc)
-
-            ind = F.S ./ sum(F.S) .> 0.01 # keep eigen values higher than 1%
-
-            Xr   = vcat(ones(size(X)[0]), Xc * F.Vt[:,ind])
-            Cxx  = (w    .* Xr') * Xr
-            Cxx2 = (w.^2 .* Xr') * Xr
-            Cxy  = (w    .* Y' ) * Xr
-
-            inv_Cxx = inv(Cxx) # in case of error here, increase the number 
-                               # of analogs (af.k option)
-
-            
-            # regression on principal components
-            beta = inv_Cxx * Cxy'
-            X0   = x[i_N,i_var_neighboor] .- Xm
-            X0r  = vcat(ones(size(X0)[0]), X0 * F.Vt[:,ind])
-
-            # weighted mean
-            xf_mean[i_N,i_var] = X0r * beta
-            pred               = Xr  * beta
-            res                = Y  .- pred
-            xf_tmp[:,i_var]   .= xf_mean[i_N,i_var] .+ res
-    
-            # weigthed covariance
-            cov_xfc = ((w .* res') * res)/(1 .- trace(Cxx2 * inv_Cxx))
-            cov_xf  = cov_xfc .* ( 1 .+ trace(Cxx2 * inv_Cxx * X0r' * X0r * inv_Cxx))
-            
-            # constant weights for local linear
-            weights[i_N,:] .= 1.0/length(weights[i_N,:])
-            
-            # random sampling from the multivariate Gaussian distribution
-            d = MvNormal(xf_mean[i_N,i_var],cov_xf)
-            rand!(d, xf[i_N,i_var])
-
-        #end
+#        # for each member/particle
+#        for ip in 1:np
+#            
+#            # initialization
+#            xf_tmp = zeros((af.k,maximum(ivar)))
+#         
+#            # define analogs, successors and weights
+#            X = af.catalog.analogs[    index_knn[ip,:], ivar_neighboor ]                
+#            Y = af.catalog.successors[ index_knn[ip,:], ivar]
+#
+#            w = weights[ip,:]'
+#            
+#            # compute centered weighted mean and weighted covariance
+#            Xm = sum(X .* w', dims=1)
+#            @show Xc = X .- Xm
+#
+#            
+#            # use SVD decomposition to compute principal components
+#            F = svd(Xc)
+#
+#            ind = F.S ./ sum(F.S) .> 0.01 # keep eigen values higher than 1%
+#
+#            Xr   = vcat(ones(size(X)[0]), Xc * F.Vt[:,ind])
+#            Cxx  = (w    .* Xr') * Xr
+#            Cxx2 = (w.^2 .* Xr') * Xr
+#            Cxy  = (w    .* Y' ) * Xr
+#
+#            inv_Cxx = inv(Cxx) # in case of error here, increase the number 
+#                               # of analogs (af.k option)
+#
+#            
+#            # regression on principal components
+#            beta = inv_Cxx * Cxy'
+#            X0   = x[ip,ivar_neighboor] .- Xm
+#            X0r  = vcat(ones(size(X0)[0]), X0 * F.Vt[:,ind])
+#
+#            # weighted mean
+#            xf_mean[ip,ivar] = X0r * beta
+#            pred               = Xr  * beta
+#            res                = Y  .- pred
+#            xf_tmp[:,ivar]   .= xf_mean[ip,ivar] .+ res
+#    
+#            # weigthed covariance
+#            cov_xfc = ((w .* res') * res)/(1 .- trace(Cxx2 * inv_Cxx))
+#            cov_xf  = cov_xfc .* ( 1 .+ trace(Cxx2 * inv_Cxx * X0r' * X0r * inv_Cxx))
+#            
+#            # constant weights for local linear
+#            weights[ip,:] .= 1.0/length(weights[ip,:])
+#            
+#            # random sampling from the multivariate Gaussian distribution
+#            d = MvNormal(xf_mean[ip,ivar],cov_xf)
+#            rand!(d, xf[ip,ivar])
+#
+#        end
             
         # stop condition
-        if all(i_var .== n) && length(i_var) == n
+        if all(ivar .== nv) || length(ivar) == nv
 
             stop_condition = true
              
         else
 
-            i_var .+= 1
+            ivar .+= 1
 
         end
 
     end
+
+    xf, xf_mean
     
 end
