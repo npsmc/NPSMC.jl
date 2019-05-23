@@ -90,9 +90,9 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
         if k == 1
             xf = da.xb' .+ rand(MvNormal(da.xb, da.B), np)'
         else
-            xf          .=  da.m(x̂.part[k-1,:,:])
-            m_xa_part_tmp     .=  xf
-            m_xa_part[k,:,:]  .=  xf
+            xf, xf_mean        =  da.m(x̂.part[k-1,:,:])
+            m_xa_part_tmp     .=  xf_mean
+            m_xa_part[k,:,:]  .=  xf_mean
         end
 
         xf_part[k,:,:] .= xf
