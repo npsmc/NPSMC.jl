@@ -1,5 +1,3 @@
-export AbstractForecasting
-
 abstract type AbstractForecasting end
 
 export ModelForecasting
@@ -40,8 +38,10 @@ function ( m :: ModelForecasting )( x :: Array{Float64, 2})
 
     sim = solve(monte_prob, Tsit5(), num_monte=np, save_everystep=false)
 
-    xf = [last(sim[i].u) for i in 1:np]
+    sol = [last(sim[i].u) for i in 1:np]
 
-    vcat(xf'...)
+    xf = vcat(sol'...)
+
+    return xf, xf
             
 end
