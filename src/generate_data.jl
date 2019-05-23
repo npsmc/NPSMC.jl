@@ -50,16 +50,17 @@ function generate_data( ssm :: StateSpaceModel )
     x0 = last(sol)
     tspan = (0.0,ssm.nb_loop_train)
     prob = ODEProblem(lorenz63, x0, tspan, p)
-    sol = solve(prob,reltol=1e-6,saveat= ssm.dt_integration*ssm.dt_integration)
+    sol = solve(prob,reltol=1e-6,saveat=ssm.dt_integration)
     n = length(sol.t)
-    catalog_tmp = vcat(sol.u'...) 
+    catalog_tmp = hcat(sol.u...) 
     if ssm.sigma2_catalog > 0
-        d   = MvNormal([0.,0.0,.0], ssm.sigma2_catalog .* Matrix(I,3,3))
+        μ   = [0.,0.0,.0]
+        σ   = ssm.sigma2_catalog .* Matrix(I,3,3)
+        d   = MvNormal(μ, σ)
         eta = rand(d, n)
-        catalog_tmp .+= eta'
+        catalog_tmp .+= eta
     end
 
     xt, yo, Catalog( catalog_tmp, ssm )
 
 end
-
