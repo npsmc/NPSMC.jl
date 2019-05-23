@@ -9,7 +9,7 @@
 #       format_version: '1.4'
 #       jupytext_version: 1.1.2
 #   kernelspec:
-#     display_name: Julia 1.1.0
+#     display_name: Julia 1.1.1
 #     language: julia
 #     name: julia-1.1
 # ---
@@ -73,13 +73,13 @@ np = 100
 da = DataAssimilation( mf, :EnKs, np, xt, ssm.sigma2_obs)
 x̂ = data_assimilation(yo, da)
 
-scatter(x̂.values)
+plot(x̂.values, linestyle=:dot)
 plot!(xt.values)
+RMSE(xt.values, x̂.values)
 
 p = plot3d(1, xlim=(-25,25), ylim=(-25,25), zlim=(0,50),
                 title = "Lorenz 63", marker = 2)
-@gif for i=1:1000
-    push!(p, x̂.values[i,:]...)
+for x in eachrow(x̂.values)
+    push!(p, x...)
 end
-
-
+p
