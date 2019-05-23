@@ -2,6 +2,8 @@ export Catalog
 
 mutable struct Catalog{T}
 
+   nt         :: Int64
+   nv         :: Int64
    data       :: Array{T,2}
    analogs    :: AbstractArray{T,2}
    successors :: AbstractArray{T,2}
@@ -9,10 +11,11 @@ mutable struct Catalog{T}
 
    function Catalog( data :: Array{T,2}, ssm :: StateSpaceModel) where T
 
-       analogs    = @view data[1:end-ssm.dt_states,:]
-       successors = @view data[ssm.dt_states+1:end,:]
+       nv, nt     = size(data)
+       analogs    = @view data[:, 1:end-ssm.dt_states]
+       successors = @view data[:, ssm.dt_states+1:end]
 
-       new{T}( data, analogs, successors, ssm)
+       new{T}( nt, nv, data, analogs, successors, ssm)
 
    end
 
