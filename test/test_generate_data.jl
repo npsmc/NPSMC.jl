@@ -1,5 +1,7 @@
 @testset " Generate data for Lorenz-63 model " begin
 
+    import DifferentialEquations: ODEProblem, solve
+
     σ = 10.0
     ρ = 28.0
     β = 8.0/3
@@ -15,7 +17,8 @@
     sigma2_obs     = 2.0
 
 
-    ssm = StateSpaceModel( dt_integration, dt_states, dt_obs, 
+    ssm = StateSpaceModel( lorenz63,
+                           dt_integration, dt_states, dt_obs, 
                            params, var_obs,
                            nb_loop_train, nb_loop_test,
                            sigma2_catalog, sigma2_obs )
