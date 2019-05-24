@@ -10,7 +10,7 @@ mutable struct TimeSeries{T}
    function TimeSeries{T}( nt :: Integer, nv :: Integer) where T
  
        time   = zeros(T, nt)
-       values = zeros(T, (nt, nv))
+       values = zeros(T, (nv, nt))
 
        new( nt, nv, time, values)
 
@@ -19,7 +19,8 @@ mutable struct TimeSeries{T}
    function TimeSeries( time   :: Array{T, 1}, 
                         values :: Array{T, 2}) where T
  
-       nt, nv = size(values)
+       nt = length(time)
+       nv = first(size(values))
 
        new{T}( nt, nv, time, values)
 
