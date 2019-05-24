@@ -1,6 +1,7 @@
 @testset " Analog forecasting " begin
 
 import NPSMC: normalise!, sample_discrete
+import DifferentialEquations: ODEProblem, solve
 
 n = 10
 M = rand(n,3)
@@ -22,19 +23,26 @@ normalise!(x)
 dt_integration = 0.01
 dt_states      = 1 
 dt_obs         = 8 
-params         = [σ, ρ, β]
+parameters     = [σ, ρ, β]
 var_obs        = [1]
 nb_loop_train  = 10^2 
 nb_loop_test   = 10
 sigma2_catalog = 0.0
 sigma2_obs     = 2.0
 
-ssm = StateSpaceModel( dt_integration, dt_states, dt_obs, 
-                       params, var_obs,
+ssm = StateSpaceModel( lorenz63,
+                       dt_integration, dt_states, dt_obs, 
+                       parameters, var_obs,
                        nb_loop_train, nb_loop_test,
                        sigma2_catalog, sigma2_obs )
 
-xt, yo, catalog = generate_data( ssm )
+# compute u0 to be in the attractor space
+u0    = [8.0;0.0;30.0]
+tspan = (0.0,5.0)
+prob  = ODEProblem(ssm.model, u0, tspan, parameters)
+u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
+
+xt, yo, catalog = generate_data( ssm, u0 )
 
 af = AnalogForecasting( 5, xt, catalog )
 
