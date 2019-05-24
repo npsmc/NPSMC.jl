@@ -10,10 +10,10 @@ xt = TimeSeries{Float64}(nt, nv)
 
 
 time = collect(0:10.0)
-values = rand( nv, nt)
+values = [rand(nv) for i in eachindex(time)]
 yo = TimeSeries(time, values)
 
 @test typeof(yo.time)   == Array{Float64,1}
-@test typeof(yo.values) == Array{Float64,2}
+@test typeof(yo.values) == Array{Array{Float64,1},1}
 
 end
