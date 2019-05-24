@@ -5,22 +5,22 @@ mutable struct TimeSeries{T}
    nt     :: Integer
    nv     :: Integer
    time   :: Vector{T}
-   values :: Array{T, 2}
+   values :: Vector{Array{T, 1}}
 
    function TimeSeries{T}( nt :: Integer, nv :: Integer) where T
  
        time   = zeros(T, nt)
-       values = zeros(T, (nv, nt))
+       values = [zeros(T, nv) for i in 1:nt]
 
        new( nt, nv, time, values)
 
    end
 
    function TimeSeries( time   :: Array{T, 1}, 
-                        values :: Array{T, 2}) where T
+                        values :: Array{Array{T, 1}}) where T
  
        nt = length(time)
-       nv = first(size(values))
+       nv = size(first(values))[1]
 
        new{T}( nt, nv, time, values)
 
