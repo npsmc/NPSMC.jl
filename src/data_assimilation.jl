@@ -86,8 +86,6 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
     xf_mean       = similar(xf)
     ef            = similar(xf)
 
-    @show da.xb
-
     for k in 1:nt
         # update step (compute forecasts)            
         if k == 1
@@ -133,61 +131,21 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
 
     end 
 
-x_hat1 = [[ -6.51351549 -11.37755422  13.60281104]
- [ -6.74929877 -11.89452898  13.4774771 ]
- [ -6.9165589  -12.17223569  13.63760501]
- [ -8.22471375 -13.88124435  16.11290499]
- [ -6.31150438 -11.26152994  12.61590882]]
-x_hat2 = [[ -6.02865248 -10.5830217   13.27795867]
- [ -6.25160118 -11.05158806  13.07714473]
- [ -6.41491497 -11.31479942  13.20882905]
- [ -7.68178756 -13.03847079  15.4589259 ]
- [ -5.83342541 -10.42707995  12.29093051]]
-
-    @show x̂.part[nt] = x_hat1'
-    @show x̂.part[nt-1] = x_hat2'
-    
     for k in nt:-1:1          
         if k == nt
             x̂.part[k] .= x̂.part[nt]
         else
-            @show m_xa_part_tmp = m_xa_part[k+1]
-m_xa_part_t= [[ -9.62769992 -14.39206914  21.1974462 ]
- [ -8.72415702 -13.75833961  18.77835229]
- [ -9.45835512 -14.40235001  20.46390493]
- [-10.10526007 -14.79825639  22.16267275]
- [ -9.20961258 -14.25456195  19.76245743]]
-            m_xa_part_tmp = m_xa_part_t'
-            #tej, m_xa_tmp = da.m(mean(x̂.part[k],dims=2))
-            @show m_xa_tmp = [ -6.93970067; -12.12564896;  13.88381913]
-            @show tmp1 = (x̂.part[k] .- mean(x̂.part[k],dims=2))'
-            @show m_xa_part_tmp 
+            m_xa_part_tmp = m_xa_part[k+1]
+            tej, m_xa_tmp = da.m(mean(x̂.part[k],dims=2))
+            tmp1 = (x̂.part[k] .- mean(x̂.part[k],dims=2))'
             tmp2 = m_xa_part_tmp .- m_xa_tmp
-            @show tmp2
-            pf[k+1] = [[ 0.52055832  0.86229172 -0.56650255]
- [ 0.86229172  1.42974479 -0.93394425]
- [-0.56650255 -0.93394425  0.63222399]]'
-            @show pf[k+1]
             Ks   = 1.0 ./(np-1) .* ((tmp1' * tmp2') * inv_using_SVD(pf[k+1],0.9999))
-            @show Ks
-            xf_part[k+1] .= [[ -8.66705872 -13.61401191  18.93340205]
- [ -8.62838071 -13.62311946  18.74206282]
- [ -8.86092185 -13.78486135  19.29875258]
- [ -9.42985617 -14.32637588  20.56881391]
- [ -8.78387185 -13.73975828  19.15235668]]'
-            @show x̂.part[k+1]
-            @show xf_part[k+1]
-            @show x̂.part[k] .+= ((x̂.part[k+1] .- xf_part[k+1])' * Ks')'
-            return
+            x̂.part[k] .+= ((x̂.part[k+1] .- xf_part[k+1])' * Ks')'
         end
-        @show  x̂.weights[k]
         x̂.values[k] .= vec(sum(x̂.part[k] .* x̂.weights[k]', dims=2))
-        @show  x̂.values[k]
     end
     
     x̂       
 
 end
 # -
-
-
