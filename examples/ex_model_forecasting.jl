@@ -9,7 +9,7 @@
 #       format_version: '1.4'
 #       jupytext_version: 1.1.2
 #   kernelspec:
-#     display_name: Julia 1.1.1
+#     display_name: Julia 1.1.0
 #     language: julia
 #     name: julia-1.1
 # ---
@@ -23,11 +23,12 @@ include("../src/models.jl")
 include("../src/time_series.jl")
 include("../src/state_space.jl")
 include("../src/catalog.jl")
-include("../src/generate_data.jl")
+
 
 ?StateSpaceModel
 
 # +
+include("../src/generate_data.jl")
 σ = 10.0
 ρ = 28.0
 β = 8.0/3
@@ -42,38 +43,54 @@ nb_loop_test   = 10
 sigma2_catalog = 0.0
 sigma2_obs     = 2.0
 
-ssm = StateSpaceModel( dt_integration, dt_states, dt_obs, 
+ssm = StateSpaceModel( lorenz63,
+                       dt_integration, dt_states, dt_obs, 
                        parameters, var_obs,
                        nb_loop_train, nb_loop_test,
                        sigma2_catalog, sigma2_obs )
 
-xt, yo, catalog = generate_data( ssm )
+# compute u0 to be in the attractor space
+u0    = [8.0;0.0;30.0]
+tspan = (0.0,5.0)
+prob  = ODEProblem(ssm.model, u0, tspan, parameters)
+u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
+
+xt, yo, catalog = generate_data( ssm, u0 );
+xt.values[1]
+# + {}
+import Plots:plot
+
+function plot( x :: TimeSeries; kwargs... )
+
+    p = plot()
+    for i in 1:xt.nv
+        plot!(p, xt.time,vcat(xt.values'...)[:,i], line=(:solid,i), label="x$i")
+    end
+    p
+
+end
 # -
-# state and observations (when available)
-plot(xt.time,xt.values[:,1], line=(:solid,:red), label="xt")
-obs = findall(.!isnan.(yo.values))
-scatter!(yo.time[obs],yo.values[obs],  label="yo")
-plot!(xt.time,xt.values[:,2], line=(:solid,:blue), label="x₂")
-#plot!(yo.time,yo.values[:,2], line=(:dot,:blue) )
-plot!(xt.time,xt.values[:,3], line=(:solid,:green), label="x₃")
-#plot!(yo.time,yo.values[:,3], line=(:dot,:green))
-xlabel!("Lorenz-63 times")
-title!("Lorenz-63 true (continuous lines) and observed trajectories (points)")
+
+plot(xt)
+scatter!( yo.time, vcat(yo.values'...)[:,1]; markersize=2)
 
 # +
 include("../src/model_forecasting.jl")
 
 mf = ModelForecasting( ssm )
 
-# -
-
 include("../src/utils.jl")
 include("../src/data_assimilation.jl")
-np = 100
+np = 5
 da = DataAssimilation( mf, :EnKs, np, xt, ssm.sigma2_obs)
-x̂ = data_assimilation(yo, da)
+da.xb .= [ 7.25667463, 11.74405549, 16.96737996]
+x̂ = data_assimilation(yo, da);
 
-plot(x̂.values, linestyle=:dot)
+# -
+
+plot(xt.time, vcat(x̂.values'...)[:,1])
+plot!(xt.time, vcat(xt.values'...)[:,1])
+
 plot!(xt.values)
 RMSE(xt.values, x̂.values)
 
@@ -83,3 +100,19 @@ for x in eachrow(x̂.values)
     push!(p, x...)
 end
 p
+
+xpart = [zeros(Float64,(3,10)) for i in 1:5]
+
+# +
+xf = reshape(1:30, 3, 10)
+w  = ones(10)
+
+vec(sum(xf .* w', dims=2))
+# -
+
+xpart[1] .= xf
+
+rand(MvNormal(da.xb, da.B), np)
+
+
+
