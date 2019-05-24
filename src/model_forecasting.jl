@@ -1,3 +1,5 @@
+import DifferentialEquations: ODEProblem, MonteCarloProblem, solve
+
 abstract type AbstractForecasting end
 
 export ModelForecasting
