@@ -85,6 +85,7 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
     m_xa_part_tmp = similar(xf)
     xf_mean       = similar(xf)
     ef            = similar(xf)
+    Ks            = zeros(Float64,(3,3))
 
     for k in 1:nt
         # update step (compute forecasts)            
@@ -112,12 +113,12 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
             σ   = da.R[ivar_obs,ivar_obs]
             eps = rand(MvNormal( μ, σ), np)
             yf  = da.H[ivar_obs,:] * xf
-            SIGMA  = (da.H[ivar_obs,:] * pf[k]) * da.H[ivar_obs,:]' 
-            SIGMA += da.R[ivar_obs,ivar_obs]
+            SIGMA     = (da.H[ivar_obs,:] * pf[k]) * da.H[ivar_obs,:]' 
+            SIGMA   .+= da.R[ivar_obs,ivar_obs]
             SIGMA_INV = inv(SIGMA)
-            K = (pf[k] * da.H[ivar_obs,:]') * SIGMA_INV 
-            d = yo.values[k][ivar_obs] .- yf .+ eps
-            x̂.part[k] .= xf .+ (d' * K')'
+            K  = (pf[k] * da.H[ivar_obs,:]') * SIGMA_INV 
+            d  = yo.values[k][ivar_obs] .- yf .+ eps
+            x̂.part[k] .= xf .+ K * d
             # compute likelihood
             innov_ll = mean(yo.values[k][ivar_obs] .- yf, dims=2)
             loglik   = ( -0.5 * dot((innov_ll' * SIGMA_INV), innov_ll) 
@@ -139,8 +140,8 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
             tej, m_xa_tmp = da.m(mean(x̂.part[k],dims=2))
             tmp1 = (x̂.part[k] .- mean(x̂.part[k],dims=2))'
             tmp2 = m_xa_part_tmp .- m_xa_tmp
-            Ks   = 1.0 ./(np-1) .* ((tmp1' * tmp2') * inv_using_SVD(pf[k+1],0.9999))
-            x̂.part[k] .+= ((x̂.part[k+1] .- xf_part[k+1])' * Ks')'
+            Ks  .= ((tmp1' * tmp2') * inv_using_SVD(pf[k+1],.9999))./(np-1)
+            x̂.part[k] .+= Ks * (x̂.part[k+1] .- xf_part[k+1])
         end
         x̂.values[k] .= vec(sum(x̂.part[k] .* x̂.weights[k]', dims=2))
     end
