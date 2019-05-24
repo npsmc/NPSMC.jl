@@ -23,7 +23,7 @@ function generate_data( ssm :: StateSpaceModel, u0 :: Vector{Float64} )
     
     # generSate true state (xt)
     sol = solve(prob,reltol=1e-6,saveat=ssm.dt_states*ssm.dt_integration)
-    xt  = TimeSeries(sol.t, hcat(sol.u...))
+    xt  = TimeSeries(sol.t, sol.u)
     
     # generate  partial/noisy observations (yo)
     nt   = xt.nt
@@ -34,11 +34,10 @@ function generate_data( ssm :: StateSpaceModel, u0 :: Vector{Float64} )
     step       = ssm.dt_obs ÷ ssm.dt_states
     nt         = length(xt.time)
     ε          = rand(d, nt)
-    @show size(yo.values), size(xt.values), size(ε)
     
     for j in 1:step:nt
         for i in ssm.var_obs
-            yo.values[i,j] = xt.values[i,j] + ε[i,j]
+            yo.values[j][i] = xt.values[j][i] + ε[i,j]
         end
     end
     
@@ -48,12 +47,15 @@ function generate_data( ssm :: StateSpaceModel, u0 :: Vector{Float64} )
     prob  = ODEProblem(ssm.model, u0, tspan, ssm.params)
     sol   = solve(prob,reltol=1e-6,saveat=ssm.dt_integration)
     n     = length(sol.t)
-    catalog_tmp = hcat(sol.u...) 
+    @show size(sol.u)
     if ssm.sigma2_catalog > 0
         μ   = zeros(Float64,nv)
         σ   = ssm.sigma2_catalog .* Matrix(I,nv,nv)
         d   = MvNormal(μ, σ)
-        catalog_tmp .+= rand(d, n)
+        η   = rand(d, n)
+        catalog_tmp = [ η[:,j] .+ u for u in sol.u]
+    else
+        catalog_tmp = sol.u
     end
 
     xt, yo, Catalog( catalog_tmp, ssm )
