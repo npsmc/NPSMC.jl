@@ -3,7 +3,7 @@ using Statistics, LinearAlgebra
 " Compute the Root Mean Square Error between 2 n-dimensional vectors. "
 function RMSE(a, b)
  
-    sqrt(mean((a .- b).^2))
+    sqrt(mean((vcat(a.values'...) .- vcat(b.values'...)).^2))
 
 end
 
