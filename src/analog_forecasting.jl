@@ -58,13 +58,8 @@ function ( af :: AnalogForecasting)(x :: Array{T,2}) where T
         end
             
         # find the indices and distances of the k-nearest neighbors (knn)
-        nc = size(af.catalog.analogs)
-        data = zeros(Float64,(nc[2],nc[1]))
-        for i in 1:nc[1], j in 1:nc[2]
-            data[j,i] =  af.catalog.analogs[i,j]
-        end
 
-        kdt = KDTree(data, leafsize=50)
+        kdt = KDTree( af.catalog.analogs, leafsize=50)
 
         nc = size(x)
         points = zeros(Float64,(nc[2],nc[1]))
