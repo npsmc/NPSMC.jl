@@ -23,6 +23,7 @@ Y_t = H(X_t) + \\varepsilon_t,
 """
 struct StateSpaceModel
 
+    model          :: Function
     dt_integration :: Float64
     dt_states      :: Int64
     dt_obs         :: Int64
