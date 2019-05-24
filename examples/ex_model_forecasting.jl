@@ -71,12 +71,16 @@ include("../src/utils.jl")
 include("../src/data_assimilation.jl")
 np = 100
 da = DataAssimilation( mf, :EnKs, np, xt, ssm.sigma2_obs)
-x̂ = data_assimilation(yo, da);
-
+@time x̂ = data_assimilation(yo, da);
+RMSE(xt, x̂)
 # -
 
 plot(xt.time, vcat(x̂.values'...)[:,1])
-plot!(xt.time, vcat(xt.values'...)[:,1])
+scatter!(xt.time, vcat(xt.values'...)[:,1]; markersize=2)
+plot!(xt.time, vcat(x̂.values'...)[:,2])
+scatter!(xt.time, vcat(xt.values'...)[:,2]; markersize=2)
+plot!(xt.time, vcat(x̂.values'...)[:,3])
+scatter!(xt.time, vcat(xt.values'...)[:,3]; markersize=2)
 
 p = plot3d(1, xlim=(-25,25), ylim=(-25,25), zlim=(0,50),
             title = "Lorenz 63", marker = 2)
