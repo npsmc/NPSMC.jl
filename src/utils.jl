@@ -1,5 +1,7 @@
 using Statistics, LinearAlgebra
 
+export RMSE
+
 " Compute the Root Mean Square Error between 2 n-dimensional vectors. "
 function RMSE(a, b)
  
