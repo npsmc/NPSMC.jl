@@ -44,8 +44,13 @@ u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 )
 
-af = AnalogForecasting( 5, xt, catalog )
+af = AnalogForecasting( 50, xt, catalog )
+da = DataAssimilation( af, :AnEnKS, 100, xt, ssm.sigma2_obs )
 
-da = DataAssimilation( af, :AnEnKS, 10, xt, ssm.sigma2_obs )
+@time x̂ = data_assimilation(yo, da);
+
+
+@test RMSE(xt, x̂) < 1.0
+
 
 end
