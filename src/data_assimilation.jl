@@ -87,7 +87,7 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
     ef            = similar(xf)
     Ks            = zeros(Float64,(3,3))
 
-    for k in 1:nt
+    @showprogress 1 for k in 1:nt
         # update step (compute forecasts)            
         if k == 1
             xf .= rand(MvNormal(da.xb, da.B), np)
@@ -132,7 +132,7 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
 
     end 
 
-    for k in nt:-1:1          
+    @showprogress -1 for k in nt:-1:1          
         if k == nt
             x̂.part[k] .= x̂.part[nt]
         else
