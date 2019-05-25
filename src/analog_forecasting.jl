@@ -11,7 +11,7 @@ parameters of the analog forecasting method
 - regression : chosen regression ('locally_constant', 'increment', 'local_linear')
 - sampling : chosen sampler ('gaussian', 'multinomial')
 """
-mutable struct AnalogForecasting <: AbstractForecasting
+mutable struct AnalogForecasting <: AbstractForecasting 
 
     k             :: Int64 # number of analogs
     neighborhood  :: BitArray{2}
@@ -25,8 +25,8 @@ mutable struct AnalogForecasting <: AbstractForecasting
                                 catalog :: Catalog)
     
         neighborhood = trues((xt.nv, xt.nv)) # global analogs
-        regression = :local_linear
-        sampling   = :gaussian
+        regression   = :local_linear
+        sampling     = :gaussian
     
         new( k, neighborhood, catalog, regression, sampling)
     
@@ -40,116 +40,67 @@ end
 """
 function ( af :: AnalogForecasting)(x :: Array{T,2}) where T
 
-    np, nv         = size(x)
-    xf             = zeros(T, (np,nv))
-    xf_mean        = zeros(T, (np,nv))
-    ivar           = [1]
-    stop_condition = false
+    nv, np         = size(x)
+    xf             = zeros(T, (nv,np))
+    xf_mean        = zeros(T, (nv,np))
+    ivar_neighboor = 1:nv
+    ivar           = 1:nv
+    # global analog forecasting
+    kdt = KDTree( af.catalog.analogs, leafsize=50)
+    index_knn, dist_knn = knn(kdt, x, af.k)
     
-    # local or global analog forecasting
-    while !stop_condition
+    dists   = zeros(Float64,(af.k,np))
+    weights = zeros(Float64,(af.k,np))
+    dists  .= hcat(dist_knn...)
+    # parameter of normalization for the kernels
+    λ = median(dists)
+    # compute weights
+    weights .= exp.(-dists.^2 ./ λ)
+    mk_stochastic!(weights)
+    # initialization
+    xf_tmp = zeros((maximum(ivar),af.k))
 
-        if all(af.neighborhood) # in case of global approach
-            ivar_neighboor = collect(1:nv)
-            ivar           = collect(1:nv)
-            stop_condition = true
-        else                    # in case of local approach
-            ivar_neighboor = af.neighborhood[ivar,:] 
-        end
-            
-        # find the indices and distances of the k-nearest neighbors (knn)
-
-        kdt = KDTree( af.catalog.analogs, leafsize=50)
-
-        nc = size(x)
-        points = zeros(Float64,(nc[2],nc[1]))
-        for i in 1:nc[1], j in 1:nc[2]
-            points[j,i] =  x[i,j]
-        end
-
-        dist_knn, index_knn = knn(kdt, points, af.k)
+    for ip = 1:np
+ 
+        # define analogs, successors and weights
+        X = af.catalog.analogs[    ivar_neighboor , index_knn[ip]]
+        Y = af.catalog.successors[ ivar, index_knn[ip]]
+        w = weights[:,ip]
+        # compute centered weighted mean and weighted covariance
+        Xm = sum(X .* w', dims=2)
+        Xc = X .- Xm
+        # use SVD decomposition to compute principal components
+        F = svd(Xc', full=true)
+        # keep eigen values higher than 1%
+        ind = findall(F.S ./ sum(F.S) .> 0.01) 
+        Xr = vcat( ones(1,size(Xc)[2]), F.Vt[ind,:] * Xc)
+        Cxx  = Symmetric((Xr .* w') * Xr')
+        Cxx2 = Symmetric((Xr .* w'.^2) * Xr')
+        Cxy  = (Y  .* w') * Xr'
+        inv_Cxx = inv(Cxx) # in case of error here, increase the number 
+                           # of analogs (af.k option)
+        # regression on principal components
+        beta =  Cxy * inv_Cxx 
+        X0   = x[ivar_neighboor,ip] .- Xm
+        X0r  = vcat(ones(1,size(X0)[2]), F.Vt[ind,:] * X0 )
+        # weighted mean
+        xf_mean[ivar,ip] = beta * X0r
+        pred             = beta * Xr 
+        res              = Y  .- pred
+        xf_tmp[ivar,:]  .= xf_mean[ivar,ip] .+ res
+        # weigthed covariance
+        cov_xfc = Symmetric((res * (w .* res'))/(1 .- tr(Cxx2 * inv_Cxx)))
+        cov_xf  = Symmetric(cov_xfc .* (1 + tr(Cxx2 * inv_Cxx * X0r * X0r' * inv_Cxx)))
+        # constant weights for local linear
+        weights[:,ip] .= 1.0/length(weights[:,ip])
         
-        # parameter of normalization for the kernels
-        λ = median(Iterators.flatten(dist_knn))
-
-        # compute weights
-        if af.k == 1
-            weights = ones(Float64,(np,1))
-        else
-            weights = [exp(-d^2 / λ) for d in Iterators.flatten(dist_knn)]
-            mk_stochastic!(weights)
-        end
-
-        @show weights
-
-#        # for each member/particle
-#        for ip in 1:np
-#            
-#            # initialization
-#            xf_tmp = zeros((af.k,maximum(ivar)))
-#         
-#            # define analogs, successors and weights
-#            X = af.catalog.analogs[    index_knn[ip,:], ivar_neighboor ]                
-#            Y = af.catalog.successors[ index_knn[ip,:], ivar]
-#
-#            w = weights[ip,:]'
-#            
-#            # compute centered weighted mean and weighted covariance
-#            Xm = sum(X .* w', dims=1)
-#            @show Xc = X .- Xm
-#
-#            
-#            # use SVD decomposition to compute principal components
-#            F = svd(Xc)
-#
-#            ind = F.S ./ sum(F.S) .> 0.01 # keep eigen values higher than 1%
-#
-#            Xr   = vcat(ones(size(X)[0]), Xc * F.Vt[:,ind])
-#            Cxx  = (w    .* Xr') * Xr
-#            Cxx2 = (w.^2 .* Xr') * Xr
-#            Cxy  = (w    .* Y' ) * Xr
-#
-#            inv_Cxx = inv(Cxx) # in case of error here, increase the number 
-#                               # of analogs (af.k option)
-#
-#            
-#            # regression on principal components
-#            beta = inv_Cxx * Cxy'
-#            X0   = x[ip,ivar_neighboor] .- Xm
-#            X0r  = vcat(ones(size(X0)[0]), X0 * F.Vt[:,ind])
-#
-#            # weighted mean
-#            xf_mean[ip,ivar] = X0r * beta
-#            pred               = Xr  * beta
-#            res                = Y  .- pred
-#            xf_tmp[:,ivar]   .= xf_mean[ip,ivar] .+ res
-#    
-#            # weigthed covariance
-#            cov_xfc = ((w .* res') * res)/(1 .- trace(Cxx2 * inv_Cxx))
-#            cov_xf  = cov_xfc .* ( 1 .+ trace(Cxx2 * inv_Cxx * X0r' * X0r * inv_Cxx))
-#            
-#            # constant weights for local linear
-#            weights[ip,:] .= 1.0/length(weights[ip,:])
-#            
-#            # random sampling from the multivariate Gaussian distribution
-#            d = MvNormal(xf_mean[ip,ivar],cov_xf)
-#            rand!(d, xf[ip,ivar])
-#
-#        end
+        # random sampling from the multivariate Gaussian distribution
+        @assert ishermitian(cov_xf)
+        d = MvNormal(xf_mean[ivar,ip], cov_xf)
+        xf[ivar, ip] .= rand!(d, xf[ivar, ip])
             
-        # stop condition
-        if all(ivar .== nv) || length(ivar) == nv
-
-            stop_condition = true
-             
-        else
-
-            ivar .+= 1
-
-        end
-
     end
-
+            
     xf, xf_mean
     
 end
