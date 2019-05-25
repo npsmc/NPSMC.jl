@@ -34,3 +34,22 @@ function sinus(du, u, p, t)
     du[1] = p[1] * cos( p[1] * t )
 
 end
+
+"""
+    lorenz96(S, t, F, J)
+
+Lorenz-96 dynamical model 
+"""
+function Lorenz_96(dS, S, p, t)
+
+    F, J = p
+    x = zeros(Float64, J)
+    x[1] = (S[2]-S[J-1])*S[J]-S[1]
+    x[2] = (S[3]-S[J])*S[1]-S[2]
+    x[J-1] = (S[1]-S[J-2])*S[J-1]-S[J]
+    for j in 2:J-1
+        x[j] = (S[j+1]-S[j-2])*S[j-1]-S[j]
+    end
+    dS = x' .+ F
+
+end
