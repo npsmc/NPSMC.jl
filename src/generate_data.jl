@@ -58,6 +58,6 @@ function generate_data( ssm :: StateSpaceModel, u0 :: Vector{Float64} )
         catalog_tmp = sol.u
     end
 
-    xt, yo, Catalog( catalog_tmp, ssm )
+    xt, yo, Catalog( hcat(catalog_tmp...), ssm )
 
 end
