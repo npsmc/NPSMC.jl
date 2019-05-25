@@ -1,4 +1,4 @@
-import DifferentialEquations: ODEProblem, MonteCarloProblem, solve
+import DifferentialEquations: ODEProblem, MonteCarloProblem, solve, Tsit5
 
 """ 
     Apply the dynamical models to generate numerical forecasts. 
