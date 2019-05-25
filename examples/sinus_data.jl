@@ -7,20 +7,14 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.4'
-#       jupytext_version: 1.1.2
+#       jupytext_version: 1.1.3
 #   kernelspec:
-#     display_name: Julia 1.1.0
+#     display_name: Julia 1.1.1
 #     language: julia
 #     name: julia-1.1
 # ---
 
-using Plots
-
-include("../src/models.jl")
-include("../src/time_series.jl")
-include("../src/catalog.jl")
-include("../src/state_space.jl")
-include("../src/generate_data.jl")
+using Plots, NPSMC
 
 # +
 α = 3.0
@@ -46,14 +40,16 @@ ssm = StateSpaceModel( sinus,
                        sigma2_catalog, 
                        sigma2_obs )
 
-xt, yo, catalog = generate_data( ssm, [0.0] )
+xt, yo, catalog = generate_data( ssm, [0.0] );
 
 # -
 
-plot(xt.time, xt.values[1,:])
-scatter!(yo.time, yo.values[1,:]; markersize=2)
+plot(xt.time, vcat(xt.values...)[:,1])
+scatter!(yo.time, vcat(yo.values...)[:,1]; markersize=2)
 
-sum(.!isnan.(yo.values[1,:]))
+scatter(catalog.analogs[1,:], catalog.successors[1,:], markersize=1)
+
+
 
 
 
