@@ -14,20 +14,7 @@
 #     name: julia-1.1
 # ---
 
-using Plots
-using LinearAlgebra
-using Distributions, LinearAlgebra
-using DifferentialEquations
-using NearestNeighbors
-using Random
-
-include("../src/models.jl")
-include("../src/time_series.jl")
-include("../src/state_space.jl")
-include("../src/catalog.jl")
-include("../src/plot.jl")
-include("../src/generate_data.jl")
-include("../src/utils.jl")
+using Plots, NPSMC, DifferentialEquations
 
 # +
 σ = 10.0
@@ -58,24 +45,13 @@ u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 xt, yo, catalog = generate_data( ssm, u0 );
 # -
 # state and observations (when available)
-plot(xt)
+plot(xt.time, vcat(xt.values'...)[:,1])
 scatter!(yo.time, vcat(yo.values'...)[:,1], markersize=2)
 
-# +
-include("../src/model_forecasting.jl")
-include("../src/analog_forecasting.jl")
-include("../src/utils.jl")
-include("../src/data_assimilation.jl")
-
 mf = AnalogForecasting( 50, xt, catalog )
-
-
 np = 100
 da = DataAssimilation( mf, :EnKs, np, xt, ssm.sigma2_obs)
 @time x̂ = data_assimilation(yo, da);
 RMSE(xt, x̂)
-# -
 plot(xt.time, vcat(xt.values'...)[:,1])
 scatter!(xt.time, vcat(x̂.values'...)[:,1], markersize=2)
-
-
