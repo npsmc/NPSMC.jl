@@ -23,12 +23,11 @@ the sum over the last dimension is 1.
 """
 function mk_stochastic!(T)
 
-    if last(size(T)) == 1
+    if first(size(T)) == 1
         normalise!(T)
     else
-        n = ndims(T)
         # Copy the normaliser plane for each i.
-        normaliser = sum(T,dims=n)
+        normaliser = sum(T, dims=1)
         # Set zeros to 1 before dividing
         # This is valid since normaliser(i) = 0 iff T(i) = 0
         normaliser .+= normaliser .== 0
