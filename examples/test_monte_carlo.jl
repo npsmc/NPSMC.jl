@@ -7,16 +7,16 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.4'
-#       jupytext_version: 1.1.2
+#       jupytext_version: 1.1.3
 #   kernelspec:
-#     display_name: Julia 1.1.0
+#     display_name: Julia 1.1.1
 #     language: julia
 #     name: julia-1.1
 # ---
 
 using DifferentialEquations, Distributions
 
-include("../src/models.jl")
+using NPSMC
 
 x0 = [8.0;0.0;30.0]
 tspan = (0.0,5.0)
@@ -31,12 +31,9 @@ np = 10
 σ = 1.0 .* Matrix(I, 3, 3)
 d = MvNormal( μ, σ)
 x = x0 .+ rand(d, np)'
-x[1,:]
-
-rand(d, np)
 
 # +
-dt = 10.0
+dt = 1.0
 tspan = (0.0, dt)
 x0    = [8.0;0.0;30.0]
 
@@ -49,7 +46,7 @@ end
 
 monte_prob = MonteCarloProblem(prob, prob_func=prob_func)
 
-sim = solve(monte_prob, Tsit5(), num_monte=np, save_everystep=false)
+sim = solve(monte_prob, Tsit5(), num_monte=np)
 
 
 # +
