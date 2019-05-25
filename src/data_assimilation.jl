@@ -62,6 +62,8 @@ struct Xhat
 end
 
 # +
+export data_assimilation
+
 """ 
     data_assimilation( yo, da)
 
