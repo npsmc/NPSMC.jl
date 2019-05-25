@@ -1,32 +1,14 @@
 import DifferentialEquations: ODEProblem, MonteCarloProblem, solve
 
-abstract type AbstractForecasting end
-
-export ModelForecasting
-
-struct ModelForecasting <: AbstractForecasting
-
-    dt     :: Float64
-    params :: Vector{Float64}
-    model  :: Function
-
-    function ModelForecasting( ssm :: StateSpaceModel )
-
-        new( ssm.dt_integration, ssm.params, ssm.model )
-
-    end
-
-
-end
-
 """ 
     Apply the dynamical models to generate numerical forecasts. 
+
 """
-function ( m :: ModelForecasting )( x :: Array{Float64, 2})
+function ( ssm :: StateSpaceModel )( x :: Array{Float64, 2})
 
     nv, np = size(x)
-    p      = m.params
-    tspan  = (0.0, m.dt)
+    p      = ssm.params
+    tspan  = (0.0, ssm.dt_integration)
     u0     = zeros(Float64,nv)
 
     prob   = ODEProblem( ssm.model, u0, tspan, p)
