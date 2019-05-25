@@ -7,9 +7,9 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.4'
-#       jupytext_version: 1.1.2
+#       jupytext_version: 1.1.3
 #   kernelspec:
-#     display_name: Julia 1.1.0
+#     display_name: Julia 1.1.1
 #     language: julia
 #     name: julia-1.1
 # ---
@@ -18,14 +18,16 @@ using Plots
 using LinearAlgebra
 using Distributions, LinearAlgebra
 using DifferentialEquations
+using NearestNeighbors
+using Random
 
 include("../src/models.jl")
 include("../src/time_series.jl")
 include("../src/state_space.jl")
 include("../src/catalog.jl")
+include("../src/plot.jl")
 include("../src/generate_data.jl")
-
-?StateSpaceModel
+include("../src/utils.jl")
 
 # +
 σ = 10.0
@@ -53,55 +55,27 @@ tspan = (0.0,5.0)
 prob  = ODEProblem(ssm.model, u0, tspan, ssm.params)
 u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
-xt, yo, catalog = generate_data( ssm, u0 )
-# + {}
+xt, yo, catalog = generate_data( ssm, u0 );
+# -
 # state and observations (when available)
-plot(xt.time,xt.values[1,:], line=(:solid,:red), label="u1")
-
-scatter!(yo.time, yo.values[1,:],  markersize=2, label="yo")
-plot!(xt.time,xt.values[2,:], line=(:solid,:blue), label="u2")
-plot!(xt.time,xt.values[3,:], line=(:solid,:green), label="u3")
-xlabel!("Lorenz-63 times")
-title!("Lorenz-63 true (continuous lines) and observed trajectories (points)")
-# -
-
-using NearestNeighbors
-kdtree = KDTree( xt.values, leafsize=50)
-
-# +
-k = 50
-# Multiple points
-points = rand(3,100);
-
-idxs, dists = knn(kdtree, points, k, true)
-reshape(vcat(dists...),100,50)
-# -
-
-median(Iterators.flatten(dists))
+plot(xt)
+scatter!(yo.time, vcat(yo.values'...)[:,1], markersize=2)
 
 # +
 include("../src/model_forecasting.jl")
 include("../src/analog_forecasting.jl")
-
-
-mf = AnalogForecasting( 50, xt, catalog )
-nt, nv, np = 1000, 3, 100
-x = rand(np,nv)
-mf( x )
-# -
-
 include("../src/utils.jl")
 include("../src/data_assimilation.jl")
+
+mf = AnalogForecasting( 50, xt, catalog )
+
+
 np = 100
 da = DataAssimilation( mf, :EnKs, np, xt, ssm.sigma2_obs)
-x̂ = data_assimilation(yo, da)
-
-plot(x̂.values)
-
-p = plot3d(1, xlim=(-25,25), ylim=(-25,25), zlim=(0,50),
-                title = "Lorenz 63", marker = 2)
-@gif for i=1:1000
-    push!(p, x̂.values[i,:]...)
-end
+@time x̂ = data_assimilation(yo, da);
+RMSE(xt, x̂)
+# -
+plot(xt.time, vcat(xt.values'...)[:,1])
+scatter!(xt.time, vcat(x̂.values'...)[:,1], markersize=2)
 
 
