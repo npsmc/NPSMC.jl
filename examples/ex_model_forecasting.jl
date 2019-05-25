@@ -15,20 +15,12 @@
 # ---
 
 using Plots
-using LinearAlgebra
-using Distributions, LinearAlgebra
+using NPSMC
 using DifferentialEquations
-
-include("../src/models.jl")
-include("../src/time_series.jl")
-include("../src/state_space.jl")
-include("../src/catalog.jl")
-
 
 ?StateSpaceModel
 
 # +
-include("../src/generate_data.jl")
 σ = 10.0
 ρ = 28.0
 β = 8.0/3
@@ -57,23 +49,13 @@ u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 );
 # -
-include("../src/plot.jl")
-
-plot(xt)
+plot( xt.time, vcat(xt.values'...)[:,1])
 scatter!( yo.time, vcat(yo.values'...)[:,1]; markersize=2)
 
-# +
-include("../src/model_forecasting.jl")
-
-mf = ModelForecasting( ssm )
-
-include("../src/utils.jl")
-include("../src/data_assimilation.jl")
 np = 100
-da = DataAssimilation( mf, :EnKs, np, xt, ssm.sigma2_obs)
+da = DataAssimilation( ssm, :EnKs, np, xt, ssm.sigma2_obs)
 @time x̂ = data_assimilation(yo, da);
 RMSE(xt, x̂)
-# -
 
 plot(xt.time, vcat(x̂.values'...)[:,1])
 scatter!(xt.time, vcat(xt.values'...)[:,1]; markersize=2)
