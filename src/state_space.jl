@@ -1,3 +1,5 @@
+abstract type AbstractForecasting end
+
 export StateSpaceModel
 
 """
@@ -21,7 +23,7 @@ Y_t = H(X_t) + \\varepsilon_t,
 - `dt_obs` is the number of `dt_integration` between ``Y_{t-1}`` and ``Y_t``.
 
 """
-struct StateSpaceModel
+struct StateSpaceModel <: AbstractForecasting
 
     model          :: Function
     dt_integration :: Float64
