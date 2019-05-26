@@ -13,10 +13,15 @@ from StateSpace generate:
 """
 function generate_data( ssm :: StateSpaceModel, u0 :: Vector{Float64} )
 
-    @assert ssm.dt_states < ssm.dt_obs
-    # @error " ssm.dt_obs must be bigger than ssm.dt_states"
-    @assert mod(ssm.dt_obs,ssm.dt_states) == 0.0
-    # @error " ssm.dt_obs must be a multiple of ssm.dt_states "
+    try @assert ssm.dt_states < ssm.dt_obs
+    catch
+       @error " ssm.dt_obs must be bigger than ssm.dt_states"
+    end
+
+    try @assert mod(ssm.dt_obs,ssm.dt_states) == 0.0
+    catch
+        @error " ssm.dt_obs must be a multiple of ssm.dt_states "
+    end
     
     tspan = (0.0,ssm.nb_loop_test)
     prob  = ODEProblem(ssm.model, u0, tspan, ssm.params)
