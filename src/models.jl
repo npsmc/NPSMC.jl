@@ -1,4 +1,4 @@
-export lorenz63, sinus
+export lorenz63, lorenz96, sinus
 
 """ 
 
@@ -40,16 +40,15 @@ end
 
 Lorenz-96 dynamical model 
 """
-function Lorenz_96(dS, S, p, t)
-
-    F, J = p
-    x = zeros(Float64, J)
-    x[1] = (S[2]-S[J-1])*S[J]-S[1]
-    x[2] = (S[3]-S[J])*S[1]-S[2]
-    x[J-1] = (S[1]-S[J-2])*S[J-1]-S[J]
-    for j in 2:J-1
-        x[j] = (S[j+1]-S[j-2])*S[j-1]-S[j]
+function lorenz96(dx, x, p, t ) 
+    F = p[1]
+    N = Int64(p[2])
+    # 3 edge cases
+    dx[1] = (x[2] - x[N - 1]) * x[N] - x[1] + F
+    dx[2] = (x[3] - x[N]) * x[1] - x[2] + F
+    dx[N] = (x[1] - x[N - 2]) * x[N - 1] - x[N] + F
+    # then the general case
+    for n in 3:(N - 1)
+      dx[n] = (x[n + 1] - x[n - 2]) * x[n - 1] - x[n] + F
     end
-    dS = x' .+ F
-
 end
