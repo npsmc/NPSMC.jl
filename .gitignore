@@ -14,3 +14,4 @@ examples/test_monte_carlo.ipynb
 examples/ex_model_forecasting.ipynb
 examples/ex_catalog.ipynb
 examples/sinus_data.ipynb
+examples/lorenz96.ipynb
