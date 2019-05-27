@@ -1,5 +1,4 @@
-using Documenter
-using NPSMC
+using Documenter, NPSMC
 
 makedocs(
     sitename = "NPSMC",
