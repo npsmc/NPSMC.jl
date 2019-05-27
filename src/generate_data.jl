@@ -35,14 +35,14 @@ function generate_data( ssm :: StateSpaceModel, u0 :: Vector{Float64} )
     nv   = xt.nv
     d    = MvNormal(ssm.sigma2_obs .* Matrix(I,nv,nv))
     
-    yo         = TimeSeries( xt.time, xt.values .* NaN)
+    yo         = TimeSeries( xt.t, xt.u .* NaN)
     step       = ssm.dt_obs ÷ ssm.dt_states
-    nt         = length(xt.time)
+    nt         = length(xt.t)
     ε          = rand(d, nt)
     
     for j in 1:step:nt
         for i in ssm.var_obs
-            yo.values[j][i] = xt.values[j][i] + ε[i,j]
+            yo.u[j][i] = xt.u[j][i] + ε[i,j]
         end
     end
     
