@@ -3,29 +3,29 @@ abstract type AbstractTimeSeries end
 export TimeSeries
 
 
-mutable struct TimeSeries{T} <:  AbstractTimeSeries
+mutable struct TimeSeries <:  AbstractTimeSeries
 
    nt  :: Integer
    nv  :: Integer
-   t   :: Vector{T}
-   u   :: Vector{Array{T, 1}}
+   t   :: Vector{Float64}
+   u   :: Vector{Array{Float64, 1}}
 
-   function TimeSeries{T}( nt :: Integer, nv :: Integer) where T
+   function TimeSeries( nt :: Integer, nv :: Integer) 
  
-       time   = zeros(T, nt)
-       values = [zeros(T, nv) for i in 1:nt]
+       time   = zeros(Float64, nt)
+       values = [zeros(Float64, nv) for i in 1:nt]
 
        new( nt, nv, time, values)
 
    end
 
-   function TimeSeries( time   :: Array{T, 1}, 
-                        values :: Array{Array{T, 1}}) where T
+   function TimeSeries( time   :: Array{Float64, 1}, 
+                        values :: Array{Array{Float64, 1}})
  
        nt = length(time)
        nv = size(first(values))[1]
 
-       new{T}( nt, nv, time, values)
+       new( nt, nv, time, values)
 
    end
 
