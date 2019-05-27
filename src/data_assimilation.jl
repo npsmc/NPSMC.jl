@@ -1,14 +1,14 @@
-# -*- coding: utf-8 -*-
 using LinearAlgebra
 using ProgressMeter
 
 export DataAssimilation
 
-# +
 """
+    DataAssimilation( forecasting, method, np, xt, sigma2) 
+
 parameters of the filtering method
- - method :chosen method ('AnEnKF', 'AnEnKS', 'AnPF')
- - N : number of members (AnEnKF/AnEnKS) or particles (AnPF)
+ - method :chosen method (:AnEnKF, :AnEnKS, :AnPF)
+ - N      : number of members (AnEnKF/AnEnKS) or particles (AnPF)
 """
 mutable struct DataAssimilation{T}
 
@@ -36,32 +36,32 @@ mutable struct DataAssimilation{T}
     end
 
 end
-# -
 
-struct Xhat
 
+mutable struct Xhat <: AbstractTimeSeries
+
+    time    :: Array{Float64, 1}
+    values  :: Array{Array{Float64, 1}}
     part    :: Array{Array{Float64, 2}}
     weights :: Array{Array{Float64, 1}}
-    values  :: Array{Array{Float64, 1}}
     loglik  :: Array{Float64, 1}
-    time    :: Array{Float64, 1}
 
     function Xhat( x :: TimeSeries, np :: Int64)
 
         nt      = x.nt
         nv      = x.nv
         time    = x.time
-        part    = [zeros(Float64,nv,np)   for i in 1:nt]
-        weights = [ones(Float64,np) ./ np for i in 1:nt]
-        values  = [zeros(Float64,nv)      for i in 1:nt]
-        loglik  = zeros(Float64,  nt)
+        part    = [zeros(Float64, nv, np)   for i in 1:nt]
+        weights = [ones( Float64, np) ./ np for i in 1:nt]
+        values  = [zeros(Float64, nv)       for i in 1:nt]
+        loglik  =  zeros(Float64, nt)
 
-        new( part, weights, values, loglik, time)
+        new( time, values, part, weights, loglik)
 
     end
 end
 
-# +
+
 export data_assimilation
 
 """ 
@@ -90,6 +90,7 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
     Ks            = zeros(Float64,(3,3))
 
     @showprogress 1 for k in 1:nt
+
         # update step (compute forecasts)            
         if k == 1
             xf .= rand(MvNormal(da.xb, da.B), np)
@@ -135,6 +136,7 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
     end 
 
     @showprogress -1 for k in nt:-1:1          
+
         if k == nt
             x̂.part[k] .= x̂.part[nt]
         else
@@ -146,9 +148,9 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
             x̂.part[k] .+= Ks * (x̂.part[k+1] .- xf_part[k+1])
         end
         x̂.values[k] .= vec(sum(x̂.part[k] .* x̂.weights[k]', dims=2))
+
     end
     
     x̂       
 
 end
-# -
