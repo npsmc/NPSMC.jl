@@ -9,12 +9,22 @@
 #       format_version: '1.4'
 #       jupytext_version: 1.1.3
 #   kernelspec:
-#     display_name: Julia 1.1.1
+#     display_name: Julia 1.1.0
 #     language: julia
 #     name: julia-1.1
 # ---
 
-using Plots, NPSMC, DifferentialEquations
+using Plots, DifferentialEquations
+
+include("../src/models.jl")
+include("../src/time_series.jl")
+include("../src/state_space.jl")
+include("../src/catalog.jl")
+include("../src/plot.jl")
+include("../src/generate_data.jl")
+include("../src/utils.jl")
+include("../src/model_forecasting.jl")
+
 
 # +
 σ = 10.0
@@ -43,15 +53,19 @@ prob  = ODEProblem(ssm.model, u0, tspan, ssm.params)
 u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 );
+typeof(xt)
 # -
-# state and observations (when available)
-plot(xt.time, vcat(xt.values'...)[:,1])
-scatter!(yo.time, vcat(yo.values'...)[:,1], markersize=2)
-
-mf = AnalogForecasting( 50, xt, catalog )
+include("../src/analog_forecasting.jl")
+include("../src/data_assimilation.jl")
+af = AnalogForecasting( 50, xt, catalog; 
+    regression = :local_linear, sampling = :multinomial )
 np = 100
-da = DataAssimilation( mf, :EnKs, np, xt, ssm.sigma2_obs)
+da = DataAssimilation( af, :EnKs, np, xt, ssm.sigma2_obs)
 @time x̂ = data_assimilation(yo, da);
 RMSE(xt, x̂)
-plot(xt.time, vcat(xt.values'...)[:,1])
-scatter!(xt.time, vcat(x̂.values'...)[:,1], markersize=2)
+
+plot(xt.t, vcat(xt.u'...)[:,1])
+plot!(xt.t, vcat(x̂.u'...)[:,1])
+scatter!(yo.t, vcat(yo.u'...)[:,1], markersize=2)
+
+
