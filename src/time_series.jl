@@ -1,6 +1,9 @@
+abstract type AbstractTimeSeries end
+
 export TimeSeries
 
-mutable struct TimeSeries{T}
+
+mutable struct TimeSeries{T} <:  AbstractTimeSeries
 
    nt     :: Integer
    nv     :: Integer
