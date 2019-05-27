@@ -60,7 +60,7 @@ include("../src/data_assimilation.jl")
 af = AnalogForecasting( 50, xt, catalog; 
     regression = :local_linear, sampling = :multinomial )
 np = 100
-da = DataAssimilation( af, :EnKs, np, xt, ssm.sigma2_obs)
+da = DataAssimilation( af, :EnKS, np, xt, ssm.sigma2_obs)
 @time x̂ = data_assimilation(yo, da);
 RMSE(xt, x̂)
 
