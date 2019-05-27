@@ -26,7 +26,7 @@ ssm = StateSpaceModel( lorenz63,
 # compute u0 to be in the attractor space
 u0    = [8.0;0.0;30.0]
 tspan = (0.0,5.0)
-prob  = ODEProblem(ssm.model, u0, tspan, parameters)
+prob  = ODEProblem(lorenz63, u0, tspan, parameters)
 u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 )
