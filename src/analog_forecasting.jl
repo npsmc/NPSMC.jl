@@ -40,11 +40,11 @@ end
     Apply the analog method on catalog of historical data 
     to generate forecasts. 
 """
-function ( forecasting :: AnalogForecasting)(x :: Array{T,2}) where T
+function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
 
     nv, np         = size(x)
-    xf             = zeros(T, (nv,np))
-    xf_mean        = zeros(T, (nv,np))
+    xf             = zeros(Float64, (nv,np))
+    xf_mean        = zeros(Float64, (nv,np))
     ivar           = [1]
     condition      = true
 
