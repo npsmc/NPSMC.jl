@@ -26,7 +26,7 @@ mutable struct DataAssimilation{T}
                                xt     :: TimeSeries{T},
                                sigma2 :: Float64 ) where T
                 
-        xb = xt.values[1]
+        xb = xt.u[1]
         B  = 0.1 * Matrix(I, xt.nv, xt.nv)
         H  = Matrix( I, xt.nv, xt.nv)
         R  = sigma2 .* H
@@ -40,8 +40,8 @@ end
 
 mutable struct Xhat <: AbstractTimeSeries
 
-    time    :: Array{Float64, 1}
-    values  :: Array{Array{Float64, 1}}
+    t       :: Array{Float64, 1}
+    u       :: Array{Array{Float64, 1}}
     part    :: Array{Array{Float64, 2}}
     weights :: Array{Array{Float64, 1}}
     loglik  :: Array{Float64, 1}
@@ -50,7 +50,7 @@ mutable struct Xhat <: AbstractTimeSeries
 
         nt      = x.nt
         nv      = x.nv
-        time    = x.time
+        time    = x.t
         part    = [zeros(Float64, nv, np)   for i in 1:nt]
         weights = [ones( Float64, np) ./ np for i in 1:nt]
         values  = [zeros(Float64, nv)       for i in 1:nt]
@@ -106,7 +106,7 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
         pf[k] .= (ef * ef') ./ (np-1)
 
         # analysis step (correct forecasts with observations)          
-        ivar_obs = findall(.!isnan.(yo.values[k]))
+        ivar_obs = findall(.!isnan.(yo.u[k]))
         n = length(ivar_obs)
 
         loglik = 0.0 :: Float64
@@ -120,17 +120,17 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
             SIGMA   .+= da.R[ivar_obs,ivar_obs]
             SIGMA_INV = inv(SIGMA)
             K  = (pf[k] * da.H[ivar_obs,:]') * SIGMA_INV 
-            d  = yo.values[k][ivar_obs] .- yf .+ eps
+            d  = yo.u[k][ivar_obs] .- yf .+ eps
             x̂.part[k] .= xf .+ K * d
             # compute likelihood
-            innov_ll = mean(yo.values[k][ivar_obs] .- yf, dims=2)
+            innov_ll = mean(yo.u[k][ivar_obs] .- yf, dims=2)
             loglik   = ( -0.5 * dot((innov_ll' * SIGMA_INV), innov_ll) 
                          -0.5 * (nv * log(2π) + log(det(SIGMA))))
         else
             x̂.part[k] .= xf
         end
 
-        x̂.values[k] .= vec(sum(x̂.part[k] .* x̂.weights[k]',dims=2))
+        x̂.u[k] .= vec(sum(x̂.part[k] .* x̂.weights[k]',dims=2))
         x̂.loglik[k]  = loglik
 
     end 
@@ -147,7 +147,7 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
             Ks  .= ((tmp1' * tmp2') * inv_using_SVD(pf[k+1],.9999))./(np-1)
             x̂.part[k] .+= Ks * (x̂.part[k+1] .- xf_part[k+1])
         end
-        x̂.values[k] .= vec(sum(x̂.part[k] .* x̂.weights[k]', dims=2))
+        x̂.u[k] .= vec(sum(x̂.part[k] .* x̂.weights[k]', dims=2))
 
     end
     
