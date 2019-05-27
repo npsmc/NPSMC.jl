@@ -168,7 +168,7 @@ function ( forecasting :: AnalogForecasting)(x :: Array{T,2}) where T
                 
         end
 
-        if all(ivar .== [nv]) && length(ivar) == nv
+        if all(ivar .== [nv]) || length(ivar) == nv
             condition = false
         else
             ivar .+= 1
