@@ -13,6 +13,8 @@ from StateSpace generate:
 """
 function generate_data( ssm :: StateSpaceModel, u0 :: Vector{Float64} )
 
+    Random.seed!(123)
+
     try @assert ssm.dt_states < ssm.dt_obs
     catch
        @error " ssm.dt_obs must be bigger than ssm.dt_states"
