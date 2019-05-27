@@ -3,7 +3,7 @@
     using Random
     
     nt, nv = 10, 3
-    xt = TimeSeries{Float64}(nt, nv)
+    xt = TimeSeries(nt, nv)
     
     @test length(xt.t) == nt
     @test typeof(xt.t) == Array{Float64,1}
