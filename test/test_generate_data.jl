@@ -31,7 +31,7 @@
 
     xt, yo, catalog = generate_data( ssm, u0 )
 
-    @show last(xt.values)
+    @show last(xt.u)
 
     @test true
 
