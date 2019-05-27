@@ -62,37 +62,47 @@ function ( forecasting :: AnalogForecasting)(x :: Array{T,2}) where T
         kdt = KDTree( forecasting.catalog.analogs, leafsize=50)
         index_knn, dist_knn = knn(kdt, x, forecasting.k)
         
-        dists   = zeros(Float64,(forecasting.k, np))
-        weights = zeros(Float64,(forecasting.k, np))
-        dists  .= hcat(dist_knn...)
         # parameter of normalization for the kernels
-        λ = median(dists)
+        λ = median(Iterators.flatten(dist_knn))
         # compute weights
-        weights .= exp.(-dists.^2 ./ λ)
-        mk_stochastic!(weights)
+        weights = [exp.(-dist.^2 ./ λ) for dist in dist_knn]
+        weights = [w ./ sum(w) for w in weights]
+
         # initialization
+        xf_tmp = zeros(Float64, (last(ivar),forecasting.k))
 
         for ip = 1:np
  
-            xf_tmp = zeros(Float64, (maximum(ivar),forecasting.k))
-
             if forecasting.regression == :locally_constant
                 
                 # compute the analog forecasts
-                xf_tmp[i_var,:] = forecasting.catalog.successors[ivar, index_knn[ip]]
+                xf_tmp[ivar,:] .= forecasting.catalog.successors[ivar, index_knn[ip]]
                 
                 # weighted mean and covariance
-                xf_mean[i_var,ip] = sum(xf_tmp[ivar,:] .* weights[:,ip]',dims=2)
-                E_xf   = xf_tmp[i_var,:] .- xf_mean[i_var,ip]
-                cov_xf = Symmetric(1.0/(1.0 .- sum(weights[:,ip].^2)) .* (weights[:,ip] .* E_xf) * E_xf')
+                xf_mean[ivar,ip] = sum(xf_tmp[ivar,:] .* weights[ip]',dims=2)
+                Exf   = xf_tmp[ivar,:] .- xf_mean[ivar,ip]
+                cov_xf = Symmetric(1.0 ./(1.0 .- sum(weights[ip].^2)) 
+                                   .* (Exf .* weights[ip]') * Exf')
 
+            elseif forecasting.regression == :increment # method "locally-incremental"
+                
+                # compute the analog forecasts
+                xf_tmp[ivar,:] .= (x[ivar,ip] 
+                               .+ forecasting.catalog.successors[ivar,index_knn[ip]]
+                               .- forecasting.catalog.analogs[ivar,index_knn[ip]])
+                
+                # weighted mean and covariance
+                xf_mean[ivar,ip] = sum(xf_tmp[ivar,:] .* weights[ip]',dims=2)
+                Exf = xf_tmp[ivar,:] .- xf_mean[ivar,ip]
+                cov_xf = Symmetric(1.0 ./(1.0 .- sum(weights[ip].^2))
+                                   .* (Exf .* weights[ip]') * Exf')
 
             elseif forecasting.regression == :local_linear
 
                 # define analogs, successors and weights
                 X = forecasting.catalog.analogs[ ivar_neighboor , index_knn[ip]]
                 Y = forecasting.catalog.successors[ ivar, index_knn[ip]]
-                w = weights[:,ip]
+                w = weights[ip]
                 # compute centered weighted mean and weighted covariance
                 Xm   = sum(X .* w', dims=2)
                 Xc   = X .- Xm
@@ -119,12 +129,42 @@ function ( forecasting :: AnalogForecasting)(x :: Array{T,2}) where T
                 cov_xfc = Symmetric((res * (w .* res'))/(1 .- tr(Cxx2 * inv_Cxx)))
                 cov_xf  = Symmetric(cov_xfc .* (1 + tr(Cxx2 * inv_Cxx * X0r * X0r' * inv_Cxx)))
                 # constant weights for local linear
-                weights[:,ip] .= 1.0/length(weights[:,ip])
+                weights[ip] .= 1.0/length(weights[ip])
+
+            else
+
+                @error "regression: locally_constant, :increment, :local_linear "
+
             end
             
-            # random sampling from the multivariate Gaussian distribution
-            d = MvNormal(xf_mean[ivar,ip], cov_xf)
-            xf[ivar, ip] .= rand!(d, xf[ivar, ip])
+            # Gaussian sampling
+            if forecasting.sampling == :gaussian
+
+                # random sampling from the multivariate Gaussian distribution
+                d = MvNormal(xf_mean[ivar,ip], cov_xf)
+                xf[ivar, ip] .= rand!(d, xf[ivar, ip])
+            
+            # Multinomial sampling
+            elseif forecasting.sampling == :multinomial
+
+                # random sampling from the multinomial distribution of the weights
+                # this speedup is due to Peter Acklam
+                cumprob = cumsum(weights[ip])
+                R = rand()
+                M = 1 :: Int64
+                N = length(cumprob)
+                for i in 1:N-1
+                    M += R > cumprob[i]
+                end
+                igood = M
+                xf[ivar, ip] .= xf_tmp[ivar, igood]
+            
+            # error
+            else
+
+                @error " sampling = :gaussian or :multinomial" 
+
+            end
                 
         end
 
