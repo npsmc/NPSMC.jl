@@ -1,19 +1,18 @@
 @testset " TimeSeries " begin
 
-using Random
-
-nt, nv = 10, 3
-xt = TimeSeries{Float64}(nt, nv)
-
-@test length(xt.time) == nt
-@test typeof(xt.time) == Array{Float64,1}
-
-
-time = collect(0:10.0)
-values = [rand(nv) for i in eachindex(time)]
-yo = TimeSeries(time, values)
-
-@test typeof(yo.time)   == Array{Float64,1}
-@test typeof(yo.values) == Array{Array{Float64,1},1}
+    using Random
+    
+    nt, nv = 10, 3
+    xt = TimeSeries{Float64}(nt, nv)
+    
+    @test length(xt.t) == nt
+    @test typeof(xt.t) == Array{Float64,1}
+    
+    t  = collect(0:10.0)
+    u  = [rand(nv) for i in eachindex(t)]
+    yo = TimeSeries(t, u)
+    
+    @test typeof(yo.t) == Array{Float64,1}
+    @test typeof(yo.u) == Array{Array{Float64,1},1}
 
 end
