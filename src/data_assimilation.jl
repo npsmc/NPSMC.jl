@@ -10,11 +10,11 @@ parameters of the filtering method
  - method :chosen method (:AnEnKF, :AnEnKS, :AnPF)
  - N      : number of members (AnEnKF/AnEnKS) or particles (AnPF)
 """
-mutable struct DataAssimilation{T}
+mutable struct DataAssimilation
 
     method :: Symbol
     np     :: Int64
-    xb     :: Vector{T}
+    xb     :: Vector{Float64}
     B      :: Array{Float64, 2}
     H      :: Array{Bool,    2}
     R      :: Array{Float64, 2}
@@ -23,15 +23,15 @@ mutable struct DataAssimilation{T}
     function DataAssimilation( m      :: AbstractForecasting,
                                method :: Symbol, 
                                np     :: Int64, 
-                               xt     :: TimeSeries{T},
-                               sigma2 :: Float64 ) where T
+                               xt     :: TimeSeries,
+                               sigma2 :: Float64 )
                 
         xb = xt.u[1]
         B  = 0.1 * Matrix(I, xt.nv, xt.nv)
         H  = Matrix( I, xt.nv, xt.nv)
         R  = sigma2 .* H
 
-        new{T}(  method, np, xb, B, H, R, m )
+        new(  method, np, xb, B, H, R, m )
 
     end
 
