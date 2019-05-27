@@ -1,11 +1,12 @@
-push!(LOAD_PATH,"../src/")
-
 using Documenter, NPSMC
 
 makedocs(
-    sitename = "NPSMC",
-    format = Documenter.HTML(),
-    modules = [NPSMC]
+    modules   = [NPSMC],
+    sitename  = "NPSMC.jl",
+    doctest   = false, 
+    authors   = "Pierre Navaro",
+    format    = Documenter.HTML(),
+    pages     = ["Home" => "index.md"]
 )
 
 deploydocs(
