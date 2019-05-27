@@ -49,7 +49,7 @@ for regression in [:locally_constant, :increment, :local_linear]
         f  = AnalogForecasting( 50, xt, catalog; 
                                 regression=regression,
                                 sampling=sampling )
-        da = DataAssimilation( f, :AnEnKS, 100, xt, ssm.sigma2_obs )
+        da = DataAssimilation( f, :EnKS, 100, xt, ssm.sigma2_obs )
         x̂  = data_assimilation(yo, da)
         accuracy = RMSE(xt, x̂) 
         println( " $regression, $sampling : $accuracy ")
