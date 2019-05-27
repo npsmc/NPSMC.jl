@@ -41,17 +41,18 @@ end
 """ 
 Sampling from a non-uniform distribution. 
 """
-function sample_discrete(prob)
+function sample_discrete(prob, r, c)
 
     # this speedup is due to Peter Acklam
     cumprob = cumsum(prob)
-    R = rand()
-    M = 0 :: Int64
+    R = rand(r,c)
+    M = zeros(Int64,(r,c))
     N = length(cumprob)
     for i in 1:N-1
-        M += R > cumprob[i]
+        M .+= R .> cumprob[i]
     end
     M
+
 end
 
 
