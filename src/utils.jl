@@ -5,7 +5,7 @@ export RMSE
 " Compute the Root Mean Square Error between 2 n-dimensional vectors. "
 function RMSE(a, b)
  
-    sqrt(mean((vcat(a.values'...) .- vcat(b.values'...)).^2))
+    sqrt(mean((vcat(a.u'...) .- vcat(b.u'...)).^2))
 
 end
 
