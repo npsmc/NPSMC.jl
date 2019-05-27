@@ -5,10 +5,10 @@ export TimeSeries
 
 mutable struct TimeSeries{T} <:  AbstractTimeSeries
 
-   nt     :: Integer
-   nv     :: Integer
-   time   :: Vector{T}
-   values :: Vector{Array{T, 1}}
+   nt  :: Integer
+   nv  :: Integer
+   t   :: Vector{T}
+   u   :: Vector{Array{T, 1}}
 
    function TimeSeries{T}( nt :: Integer, nv :: Integer) where T
  
