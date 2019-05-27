@@ -11,9 +11,11 @@ from StateSpace generate:
  - partial/noisy observations (yo)
  - catalog
 """
-function generate_data( ssm :: StateSpaceModel, u0 :: Vector{Float64} )
+function generate_data( ssm :: StateSpaceModel, 
+                        u0  :: Vector{Float64},
+                        seed = 42 )
 
-    Random.seed!(123)
+    Random.seed!(seed)
 
     try @assert ssm.dt_states < ssm.dt_obs
     catch
