@@ -158,7 +158,6 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
 
         end
 
-    #=
     elseif da.method == :PF
 
         # special case for k=1
@@ -171,20 +170,20 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
 
         if length(ivar_obs) > 0
             # weights
-            for i_N in 1:np
-                weights_tmp[ip] = multivariate_normal.pdf(yo.u[k,ivar_obs].T,
-                                  np.dot(DA.H[ivar_obs,:],xf[i_N,:].T),
-                                  DA.R[np.ix_(ivar_obs,ivar_obs)])
+            for ip in 1:np
+                weights_tmp[ip] = pdf(yo.u[k][ivar_obs],
+                                  DA.H[ivar_obs,:] * xf[:,ip]',
+                                  DA.R[ivar_obs,ivar_obs])
             end
             # normalization
             weights_tmp ./= sum(weights_tmp)
             # resampling
             indic = resampleMultinomial(weights_tmp)
-            x̂.part[k] = xf[indic,:]         
+            x̂.part[k] = xf[indic,:]
             weights_tmp_indic = weights_tmp[indic]/sum(weights_tmp[indic])
-            x̂.u[k,:] = sum(xf[indic,:]*weights_tmp_indic[np.newaxis],0)
+            x̂.u[k] = sum(xf[indic,:]*weights_tmp_indic[np.newaxis],0)
             # find number of iterations before new observation
-            k_count_end = minimum(findall(sum(.!isnan.(yo.u[:,k+1:]),dims=2) .>= 1))
+            k_count_end = minimum(findall(sum(.!isnan.(yo.u[k+1:end]),dims=2) .>= 1))
 
         else
             # weights
@@ -201,7 +200,7 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
             if k_count < length(m_xa_traj)
                 m_xa_traj[k_count] = xf
             else
-                m_xa_traj.append(xf)
+                push!(m_xa_traj, xf)
             end
             k_count += 1
 
@@ -210,37 +209,39 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
             if length(ivar_obs) > 0
                 # weights
                 for i in 1:np
-                    weights_tmp[i] = pdf(yo.u[k,ivar_obs],np.dot(da.H[ivar_obs,:],xf[:,i]'),da.R[ivar_obs,ivar_obs])
+                    weights_tmp[i] = pdf(yo.u[k][ivar_obs],
+                                     da.H[:,ivar_obs] * xf[:,i]',
+                                     da.R[ivar_obs,ivar_obs])
                 end
                 # normalization
                 weights_tmp ./= sum(weights_tmp)
                 # resampling
-                indic = resampleMultinomial(weights_tmp)            
+                indic = resampleMultinomial(weights_tmp)
                 # stock results
-                x̂.part[k-k_count_end:k+1] = np.asarray(m_xa_traj)[:,indic,:]
+                x̂.part[k-k_count_end:k+1] = m_xa_traj[:,indic,:]
                 weights_tmp_indic = weights_tmp[indic]/sum(weights_tmp[indic])            
-                x̂.u[k-k_count_end:k+1,:] = sum(np.asarray(m_xa_traj)[:,indic,:]*np.tile(weights_tmp_indic[np.newaxis].T,(k_count_end+1,1,n)),1)
+                x̂.u[k-k_count_end:k+1] = sum(m_xa_traj[:,indic,:] 
+                                           .* weights_tmp_indic[np.newaxis],1)
                 k_count = 0
                 # find number of iterations  before new observation
                 try
-                    k_count_end = minimum(findall(sum(.!isnan.(yo.u[:,k+1:]),dims=2) >= 1))
+                    k_count_end = minimum(findall(sum(.!isnan.(yo.u[:,k+1:end]),dims=2) >= 1))
                 catch ValueError
                     nothing
                 end
             else
                 # stock results
                 x̂.part[k] = xf
-                x̂.u[k,:]  = sum(xf .* weights_tmp_indic', dims=1)
+                x̂.u[k]    = sum(xf .* weights_tmp_indic', dims=1)
             end
             # stock weights
             x̂.weights[k,:] = weights_tmp_indic 
 
         end
-    =#
 
     else
 
-        @error "method = :EnKF, :EnKS, :PF "
+        @error " $(da.method) not in [:EnKF, :EnKS, :PF] "
 
     end
     
