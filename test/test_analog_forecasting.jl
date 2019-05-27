@@ -14,7 +14,7 @@ normalise!(M)
 x  = range(0, stop=2π, length=10) |> collect
 x .= sin.(x)
 normalise!(x)
-@show sample_discrete(x)
+@show sample_discrete(x, 1, 1)
 
 σ = 10.0
 ρ = 28.0
@@ -44,13 +44,18 @@ u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 )
 
-af = AnalogForecasting( 50, xt, catalog )
-da = DataAssimilation( af, :AnEnKS, 100, xt, ssm.sigma2_obs )
-
-@time x̂ = data_assimilation(yo, da);
-
-
-@test RMSE(xt, x̂) < 1.0
+for regression in [:locally_constant, :increment, :local_linear]
+    for sampling in [:gaussian, :multinomial]
+        f  = AnalogForecasting( 50, xt, catalog; 
+                                regression=regression,
+                                sampling=sampling )
+        da = DataAssimilation( f, :AnEnKS, 100, xt, ssm.sigma2_obs )
+        x̂  = data_assimilation(yo, da)
+        accuracy = RMSE(xt, x̂) 
+        println( " $regression, $sampling : $accuracy ")
+        @test accuracy < 2.0
+    end
+end
 
 
 end
