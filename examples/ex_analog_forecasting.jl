@@ -57,15 +57,13 @@ typeof(xt)
 # -
 include("../src/analog_forecasting.jl")
 include("../src/data_assimilation.jl")
-af = AnalogForecasting( 50, xt, catalog; 
+af = AnalogForecasting( 5, xt, catalog; 
     regression = :local_linear, sampling = :multinomial )
-np = 100
-da = DataAssimilation( af, :EnKS, np, xt, ssm.sigma2_obs)
-@time x̂ = data_assimilation(yo, da);
+np = 10
+da = DataAssimilation( af, :PF, np, xt, ssm.sigma2_obs)
+x̂ = data_assimilation(yo, da);
 RMSE(xt, x̂)
 
 plot(xt.t, vcat(xt.u'...)[:,1])
 plot!(xt.t, vcat(x̂.u'...)[:,1])
 scatter!(yo.t, vcat(yo.u'...)[:,1], markersize=2)
-
-
