@@ -166,17 +166,18 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
         m_xa_traj   = []
         weights_tmp = zeros(Float64, np)
         xf          = rand(MvNormal(da.xb, da.B), np)
-        ivar_obs    = findall(.!isnan.(yo.u[:,k]))
+        @show ivar_obs    = findall(.!isnan.(yo.u[k]))
+      
 
         if length(ivar_obs) > 0
             # weights
             for ip in 1:np
                 weights_tmp[ip] = pdf(yo.u[k][ivar_obs],
-                                  DA.H[ivar_obs,:] * xf[:,ip]',
-                                  DA.R[ivar_obs,ivar_obs])
+                                  da.H[ivar_obs,:] * xf[:,ip]',
+                                  da.R[ivar_obs,ivar_obs])
             end
             # normalization
-            weights_tmp ./= sum(weights_tmp)
+            @show weights_tmp ./= sum(weights_tmp)
             # resampling
             indic = resampleMultinomial(weights_tmp)
             x̂.part[k] = xf[indic,:]
@@ -196,7 +197,7 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
         
         for k in 2:nt
             # update step (compute forecasts) and add small Gaussian noise
-            xf, tej = da.m(x̂.part[k-1]) + rand(zeros(nv),DA.B ./ 100.0, np)        
+            xf, tej = da.m(x̂.part[k-1]) + rand(zeros(nv),da.B ./ 100.0, np)        
             if k_count < length(m_xa_traj)
                 m_xa_traj[k_count] = xf
             else
