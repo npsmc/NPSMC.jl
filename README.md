@@ -6,6 +6,14 @@
 
 Non parametric sequential Monte-Carlo methods
 
+
+This package is derived from the [¡AnDA! Python library](https://github.com/ptandeo/anda) 
+written by [Pierre Tandeo](pierre.tandeo@imt-atlantique.fr).  This Python library is attached to
+the following publication
+(http://journals.ametsoc.org/doi/abs/10.1175/MWR-D-16-0441.1): Lguensat, R.,
+Tandeo, P., Ailliot, P., Pulido, M., & Fablet, R. (2017). The Analog Data
+Assimilation. *Monthly Weather Review*, 145(10), 4093-4107.
+
 ## Installing NPSMC
 
 In a Julia session switch to `pkg>` mode to add `NPSMC`:
