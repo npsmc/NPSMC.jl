@@ -3,8 +3,8 @@ import Plots:plot, plot3d
 function plot( x :: TimeSeries; kwargs... )
 
     p = plot()
-    for i in 1:xt.nv
-        plot!(p, xt.t,vcat(xt.u'...)[:,i], 
+    for i in 1:x.nv
+        plot!(p, x.t,vcat(x.u'...)[:,i], 
         line=(:solid,i), label="u$i")
     end
     p
