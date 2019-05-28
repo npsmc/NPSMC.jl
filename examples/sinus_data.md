@@ -1,22 +1,23 @@
-# -*- coding: utf-8 -*-
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,jl:light
-#     text_representation:
-#       extension: .jl
-#       format_name: light
-#       format_version: '1.4'
-#       jupytext_version: 1.1.3
-#   kernelspec:
-#     display_name: Julia 1.1.1
-#     language: julia
-#     name: julia-1.1
-# ---
+---
+jupyter:
+  jupytext:
+    formats: ipynb,jl:light
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.1'
+      jupytext_version: 1.1.3
+  kernelspec:
+    display_name: Julia 1.1.1
+    language: julia
+    name: julia-1.1
+---
 
+```julia
 using Plots, NPSMC
+```
 
-# +
+```julia
 α = 3.0
 
 dt_integration = 0.01
@@ -42,15 +43,25 @@ ssm = StateSpaceModel( sinus,
 
 xt, yo, catalog = generate_data( ssm, [0.0] );
 
-# -
+```
 
+```julia
 plot(xt.time, vcat(xt.values...)[:,1])
 scatter!(yo.time, vcat(yo.values...)[:,1]; markersize=2)
+```
 
+```julia
 scatter(catalog.analogs[1,:], catalog.successors[1,:], markersize=1)
+```
 
+```julia
 
+```
 
+```julia
 
+```
 
+```julia
 
+```

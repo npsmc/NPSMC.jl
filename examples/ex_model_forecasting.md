@@ -1,26 +1,29 @@
-# -*- coding: utf-8 -*-
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,jl:light
-#     text_representation:
-#       extension: .jl
-#       format_name: light
-#       format_version: '1.4'
-#       jupytext_version: 1.1.3
-#   kernelspec:
-#     display_name: Julia 1.1.1
-#     language: julia
-#     name: julia-1.1
-# ---
+---
+jupyter:
+  jupytext:
+    formats: ipynb,jl:light
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.1'
+      jupytext_version: 1.1.3
+  kernelspec:
+    display_name: Julia 1.1.1
+    language: julia
+    name: julia-1.1
+---
 
+```julia
 using Plots
 using NPSMC
 using DifferentialEquations
+```
 
+```julia
 ?StateSpaceModel
+```
 
-# +
+```julia
 σ = 10.0
 ρ = 28.0
 β = 8.0/3
@@ -48,25 +51,33 @@ prob  = ODEProblem(ssm.model, u0, tspan, parameters)
 u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 );
-# -
+```
+```julia
 plot( xt.time, vcat(xt.values'...)[:,1])
 scatter!( yo.time, vcat(yo.values'...)[:,1]; markersize=2)
+```
 
+```julia
 np = 100
 da = DataAssimilation( ssm, :EnKs, np, xt, ssm.sigma2_obs)
 @time x̂ = data_assimilation(yo, da);
 RMSE(xt, x̂)
+```
 
+```julia
 plot(xt.time, vcat(x̂.values'...)[:,1])
 scatter!(xt.time, vcat(xt.values'...)[:,1]; markersize=2)
 plot!(xt.time, vcat(x̂.values'...)[:,2])
 scatter!(xt.time, vcat(xt.values'...)[:,2]; markersize=2)
 plot!(xt.time, vcat(x̂.values'...)[:,3])
 scatter!(xt.time, vcat(xt.values'...)[:,3]; markersize=2)
+```
 
+```julia
 p = plot3d(1, xlim=(-25,25), ylim=(-25,25), zlim=(0,50),
             title = "Lorenz 63", marker = 2)
 for x in eachrow(vcat(x̂.values'...))
     push!(p, x...)
 end
 p
+```

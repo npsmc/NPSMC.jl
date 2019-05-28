@@ -1,21 +1,23 @@
-# -*- coding: utf-8 -*-
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,jl:light
-#     text_representation:
-#       extension: .jl
-#       format_name: light
-#       format_version: '1.4'
-#       jupytext_version: 1.1.3
-#   kernelspec:
-#     display_name: Julia 1.1.0
-#     language: julia
-#     name: julia-1.1
-# ---
+---
+jupyter:
+  jupytext:
+    formats: ipynb,jl:light
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.1'
+      jupytext_version: 1.1.3
+  kernelspec:
+    display_name: Julia 1.1.0
+    language: julia
+    name: julia-1.1
+---
 
+```julia
 using Plots, DifferentialEquations
+```
 
+```julia
 include("../src/models.jl")
 include("../src/time_series.jl")
 include("../src/state_space.jl")
@@ -24,9 +26,10 @@ include("../src/plot.jl")
 include("../src/generate_data.jl")
 include("../src/utils.jl")
 include("../src/model_forecasting.jl")
+```
 
 
-# +
+```julia
 σ = 10.0
 ρ = 28.0
 β = 8.0/3
@@ -54,7 +57,8 @@ u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 );
 typeof(xt)
-# -
+```
+```julia
 include("../src/analog_forecasting.jl")
 include("../src/data_assimilation.jl")
 af = AnalogForecasting( 5, xt, catalog; 
@@ -63,7 +67,10 @@ np = 10
 da = DataAssimilation( af, :PF, np, xt, ssm.sigma2_obs)
 x̂ = data_assimilation(yo, da);
 RMSE(xt, x̂)
+```
 
+```julia
 plot(xt.t, vcat(xt.u'...)[:,1])
 plot!(xt.t, vcat(x̂.u'...)[:,1])
 scatter!(yo.t, vcat(yo.u'...)[:,1], markersize=2)
+```
