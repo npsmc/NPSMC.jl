@@ -1,9 +1,11 @@
 using Documenter, NPSMC
 
-sources = filter(x -> occursin(r".md", x), map(relpath, readdir("examples")))
+sources = filter(x -> occursin(r".md", x), map(relpath, 
+                 readdir(joinpath(@__DIR__, "..", "examples"))))
 examples = String[]
 for source in sources
-    cp( joinpath(@__DIR__, "../examples",  source),
+    @show source
+    cp( joinpath(@__DIR__, "..",  "examples",  source),
         joinpath(@__DIR__, "src", "examples",  source))
 
     push!(examples, joinpath("examples",  source))
