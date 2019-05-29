@@ -1,4 +1,4 @@
-using Documenter, NPSMC, Weave
+using Documenter, NPSMC
 
 sources = filter(x -> occursin(r".md", x), map(relpath, readdir("examples")))
 examples = String[]
