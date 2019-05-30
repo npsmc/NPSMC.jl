@@ -111,7 +111,7 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
                 # keep eigen values higher than 1%
                 ind  = findall(F.S ./ sum(F.S) .> 0.01) 
                 Xr   = vcat( ones(1,size(Xc)[2]), F.Vt[ind,:] * Xc)
-                Cxx  = Symmetric((Xr .* w') * Xr')
+                Cxx  = PDMat((Xr .* w') * Xr')
                 Cxx2 = Symmetric((Xr .* w'.^2) * Xr')
                 Cxy  = (Y  .* w') * Xr'
                 inv_Cxx = inv(Cxx) # in case of error here, increase the number 
