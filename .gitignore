@@ -18,3 +18,4 @@ examples/lorenz96.ipynb
 examples/ex_time_series.ipynb
 examples/generate_data_from_function.ipynb
 docs/src/examples
+examples/kalman.ipynb
