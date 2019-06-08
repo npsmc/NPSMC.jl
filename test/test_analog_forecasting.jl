@@ -46,11 +46,11 @@ xt, yo, catalog = generate_data( ssm, u0 )
 for regression in [:locally_constant, :increment, :local_linear]
     for sampling in [:gaussian, :multinomial]
         f  = AnalogForecasting( 50, xt, catalog; 
-                                regression=regression,
-                                sampling=sampling )
-        for method in [:EnKS, :EnKF, :PF]
-            da = DataAssimilation( f, method, 100, xt, ssm.sigma2_obs )
-            x̂  = data_assimilation(yo, da)
+                                regression = regression,
+                                sampling   = sampling )
+        for method in [EnKS(100), EnKF(100), PF(100)]
+            da = DataAssimilation( f, xt, ssm.sigma2_obs )
+            x̂  = data_assimilation(yo, da, method)
             accuracy = RMSE(xt, x̂) 
             println( " $regression, $sampling, $method : $accuracy ")
             @test accuracy < 2.0
