@@ -10,12 +10,12 @@ function RMSE(a, b)
 end
 
 " Normalize the entries of a multidimensional array sum to 1. "
-function normalise!(M)
+function normalise!( w )
 
-    c = sum(M)
+    c = sum(w)
     # Set any zeros to one before dividing
     c += c == 0
-    M ./= c
+    w ./= c
 
 end
 
@@ -23,17 +23,17 @@ end
 Ensure the matrix is stochastic, i.e., 
 the sum over the last dimension is 1.
 """
-function mk_stochastic!(T)
+function mk_stochastic!(w :: Array{Float64,2})
 
-    if first(size(T)) == 1
-        normalise!(T)
+    if first(size(w)) == 1
+        normalise!(w)
     else
         # Copy the normaliser plane for each i.
-        normaliser = sum(T, dims=1)
+        normaliser = sum(w, dims=2)
         # Set zeros to 1 before dividing
         # This is valid since normaliser(i) = 0 iff T(i) = 0
         normaliser .+= normaliser .== 0
-        T ./= normaliser
+        w ./= normaliser
     end
 
 end
@@ -84,4 +84,40 @@ function inv_using_SVD(Mat, eigvalMax)
     end
 
 end
-    
+
+""" Multinomial resampler. """
+function resample_multinomial( w :: Vector{Float64} )
+
+    m = length(w)
+    q = cumsum(w)
+    q[end] = 1.0 # Just in case...
+    i = 1
+    indx = Int64[]
+    while i <= m
+        sampl = rand()
+        j = 1
+        while q[j] < sampl
+            j = j+1
+        end
+        push!(indx, j)
+        i = i+1
+    end
+    indx
+end
+
+""" Multinomial resampler. """
+function resample!( indx :: Vector{Int64}, w :: Vector{Float64} )
+
+    m = length(w)
+    q = cumsum(w)
+    i = 1
+    while i <= m
+        sampl = rand()
+        j = 1
+        while q[j] < sampl
+            j = j+1
+        end
+        indx[i] = j
+        i = i+1
+    end
+end
