@@ -10,7 +10,6 @@ normalise!(M)
 
 @test sum(M) ≈ 1.0
 
-
 x  = range(0, stop=2π, length=10) |> collect
 x .= sin.(x)
 normalise!(x)
@@ -49,11 +48,13 @@ for regression in [:locally_constant, :increment, :local_linear]
         f  = AnalogForecasting( 50, xt, catalog; 
                                 regression=regression,
                                 sampling=sampling )
-        da = DataAssimilation( f, :EnKS, 100, xt, ssm.sigma2_obs )
-        x̂  = data_assimilation(yo, da)
-        accuracy = RMSE(xt, x̂) 
-        println( " $regression, $sampling : $accuracy ")
-        @test accuracy < 2.0
+        for method in [:EnKS, :EnKF, :PF]
+            da = DataAssimilation( f, method, 100, xt, ssm.sigma2_obs )
+            x̂  = data_assimilation(yo, da)
+            accuracy = RMSE(xt, x̂) 
+            println( " $regression, $sampling, $method : $accuracy ")
+            @test accuracy < 2.0
+        end
     end
 end
 
