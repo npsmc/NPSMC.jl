@@ -96,5 +96,3 @@ struct SSM
      end
 
 end
-
-
