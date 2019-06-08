@@ -13,9 +13,7 @@ Apply particle filters data assimilation technics using
 model forecasting or analog forecasting. 
 
 """
-function data_assimilation( yo :: TimeSeries, 
-                            da :: DataAssimilation,
-                            mc :: PF )
+function ( da :: DataAssimilation )( yo :: TimeSeries, mc :: PF )
 
     # dimensions
     nt = yo.nt        # number of observations
