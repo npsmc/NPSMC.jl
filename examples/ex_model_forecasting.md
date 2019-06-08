@@ -1,7 +1,7 @@
 ---
 jupyter:
   jupytext:
-    formats: ipynb,jl:light
+    formats: ipynb,md
     text_representation:
       extension: .md
       format_name: markdown
@@ -53,30 +53,30 @@ u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 xt, yo, catalog = generate_data( ssm, u0 );
 ```
 ```julia
-plot( xt.time, vcat(xt.values'...)[:,1])
-scatter!( yo.time, vcat(yo.values'...)[:,1]; markersize=2)
+plot( xt.t, vcat(xt.u'...)[:,1])
+scatter!( yo.t, vcat(yo.u'...)[:,1]; markersize=2)
 ```
 
 ```julia
 np = 100
-da = DataAssimilation( ssm, :EnKs, np, xt, ssm.sigma2_obs)
-@time x̂ = data_assimilation(yo, da);
+data_assimilation = DataAssimilation( ssm, xt)
+@time x̂ = data_assimilation(yo, PF(np));
 RMSE(xt, x̂)
 ```
 
 ```julia
-plot(xt.time, vcat(x̂.values'...)[:,1])
-scatter!(xt.time, vcat(xt.values'...)[:,1]; markersize=2)
-plot!(xt.time, vcat(x̂.values'...)[:,2])
-scatter!(xt.time, vcat(xt.values'...)[:,2]; markersize=2)
-plot!(xt.time, vcat(x̂.values'...)[:,3])
-scatter!(xt.time, vcat(xt.values'...)[:,3]; markersize=2)
+plot(xt.t, vcat(x̂.u'...)[:,1])
+scatter!(xt.t, vcat(xt.u'...)[:,1]; markersize=2)
+plot!(xt.t, vcat(x̂.u'...)[:,2])
+scatter!(xt.t, vcat(xt.u'...)[:,2]; markersize=2)
+plot!(xt.t, vcat(x̂.u'...)[:,3])
+scatter!(xt.t, vcat(xt.u'...)[:,3]; markersize=2)
 ```
 
 ```julia
 p = plot3d(1, xlim=(-25,25), ylim=(-25,25), zlim=(0,50),
             title = "Lorenz 63", marker = 2)
-for x in eachrow(vcat(x̂.values'...))
+for x in eachrow(vcat(x̂.u'...))
     push!(p, x...)
 end
 p
