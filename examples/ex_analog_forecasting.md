@@ -14,20 +14,8 @@ jupyter:
 ---
 
 ```julia
-using Plots, DifferentialEquations
+using Plots, DifferentialEquations, NPSMC
 ```
-
-```julia
-include("../src/models.jl")
-include("../src/time_series.jl")
-include("../src/state_space.jl")
-include("../src/catalog.jl")
-include("../src/plot.jl")
-include("../src/generate_data.jl")
-include("../src/utils.jl")
-include("../src/model_forecasting.jl")
-```
-
 
 ```julia
 σ = 10.0
@@ -59,13 +47,11 @@ xt, yo, catalog = generate_data( ssm, u0 );
 typeof(xt)
 ```
 ```julia
-include("../src/analog_forecasting.jl")
-include("../src/data_assimilation.jl")
 af = AnalogForecasting( 50, xt, catalog; 
     regression = :local_linear, sampling = :multinomial )
 np = 100
-da = DataAssimilation( af, :PF, np, xt, ssm.sigma2_obs)
-x̂ = data_assimilation(yo, da);
+data_assimilation = DataAssimilation( af, xt, ssm.sigma2_obs)
+x̂ = data_assimilation(yo, EnKS(np));
 RMSE(xt, x̂)
 ```
 
