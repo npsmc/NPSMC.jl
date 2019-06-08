@@ -36,4 +36,16 @@ struct DataAssimilation
 
     end
 
+    function DataAssimilation( m      :: StateSpaceModel,
+                               xt     :: TimeSeries )
+                
+        xb = xt.u[1]
+        B  = 0.1 * Matrix(I, xt.nv, xt.nv)
+        H  = Matrix( I, xt.nv, xt.nv)
+        R  = m.sigma2_obs .* H
+
+        new( xb, B, H, R, m )
+
+    end
+
 end
