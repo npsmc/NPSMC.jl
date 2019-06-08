@@ -201,7 +201,6 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
             resample!(indic, weights) # resampling
 
         end
-        @show indic
 
         x̂.weights[k] .= weights
 
