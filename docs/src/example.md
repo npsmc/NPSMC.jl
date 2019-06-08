@@ -44,8 +44,8 @@ scatter!( yo.time, vcat(yo.values'...)[:,1]; markersize=2)
 
 ```julia
 np = 100
-da = DataAssimilation( ssm, :EnKs, np, xt, ssm.sigma2_obs)
-@time x̂ = data_assimilation(yo, da);
+data_assimilation = DataAssimilation( ssm, xt)
+@time x̂ = data_assimilation(yo, EnKs(np))
 RMSE(xt, x̂)
 ```
 
