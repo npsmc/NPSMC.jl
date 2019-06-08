@@ -1,7 +1,7 @@
 ---
 jupyter:
   jupytext:
-    formats: ipynb,jl:light
+    formats: ipynb,md
     text_representation:
       extension: .md
       format_name: markdown
@@ -19,7 +19,7 @@ using NPSMC
 
 ```julia
 nt, nv = 10, 3
-xt = TimeSeries{Float64}(nt, nv)
+xt = TimeSeries(nt, nv)
 ```
 
 ```julia
@@ -30,5 +30,5 @@ yo = TimeSeries(time, values)
 ```
 
 ```julia
-typeof(yo.time), typeof(yo.values)
+typeof(yo.t), typeof(yo.u)
 ```
