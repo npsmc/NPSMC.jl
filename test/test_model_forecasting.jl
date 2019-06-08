@@ -31,9 +31,9 @@ u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 )
 
-da = DataAssimilation( ssm, xt, ssm.sigma2_obs )
+data_assimilation = DataAssimilation( ssm, xt )
 
-x̂ = data_assimilation(yo, da, EnKS(100))
+x̂ = data_assimilation(yo, EnKS(100))
 
 rmse = RMSE(xt, x̂)
 
