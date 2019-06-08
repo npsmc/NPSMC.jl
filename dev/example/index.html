@@ -29,8 +29,8 @@ u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 );</code></pre><pre><code class="language-julia">plot( xt.time, vcat(xt.values&#39;...)[:,1])
 scatter!( yo.time, vcat(yo.values&#39;...)[:,1]; markersize=2)</code></pre><pre><code class="language-julia">np = 100
-da = DataAssimilation( ssm, :EnKs, np, xt, ssm.sigma2_obs)
-@time x̂ = data_assimilation(yo, da);
+data_assimilation = DataAssimilation( ssm, xt)
+@time x̂ = data_assimilation(yo, EnKs(np))
 RMSE(xt, x̂)</code></pre><pre><code class="language-julia">plot(xt.time, vcat(x̂.values&#39;...)[:,1])
 scatter!(xt.time, vcat(xt.values&#39;...)[:,1]; markersize=2)
 plot!(xt.time, vcat(x̂.values&#39;...)[:,2])
