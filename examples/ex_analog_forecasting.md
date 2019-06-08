@@ -1,14 +1,14 @@
 ---
 jupyter:
   jupytext:
-    formats: ipynb,jl:light
+    formats: ipynb,md
     text_representation:
       extension: .md
       format_name: markdown
       format_version: '1.1'
       jupytext_version: 1.1.3
   kernelspec:
-    display_name: Julia 1.1.0
+    display_name: Julia 1.1.1
     language: julia
     name: julia-1.1
 ---
@@ -61,16 +61,16 @@ typeof(xt)
 ```julia
 include("../src/analog_forecasting.jl")
 include("../src/data_assimilation.jl")
-af = AnalogForecasting( 5, xt, catalog; 
+af = AnalogForecasting( 50, xt, catalog; 
     regression = :local_linear, sampling = :multinomial )
-np = 10
+np = 100
 da = DataAssimilation( af, :PF, np, xt, ssm.sigma2_obs)
 x̂ = data_assimilation(yo, da);
 RMSE(xt, x̂)
 ```
 
 ```julia
-plot(xt.t, vcat(xt.u'...)[:,1])
-plot!(xt.t, vcat(x̂.u'...)[:,1])
-scatter!(yo.t, vcat(yo.u'...)[:,1], markersize=2)
+plot(xt.t, vcat(xt.u'...)[:,1], label=:true)
+plot!(xt.t, vcat(x̂.u'...)[:,1], label=:forecasted)
+scatter!(yo.t, vcat(yo.u'...)[:,1], markersize=2, label=:observed)
 ```
