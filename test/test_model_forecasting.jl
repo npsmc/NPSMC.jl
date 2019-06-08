@@ -31,10 +31,14 @@ u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 )
 
-da = DataAssimilation( ssm, :EnKS, 100, xt, ssm.sigma2_obs )
+da = DataAssimilation( ssm, xt, ssm.sigma2_obs )
 
-@time x̂ = data_assimilation(yo, da);
+x̂ = data_assimilation(yo, da, EnKS(100))
 
-@test RMSE(xt, x̂) < 1.0
+rmse = RMSE(xt, x̂)
+
+println(" model forecasting RMSE : $rmse ")
+
+@test rmse < 1.0
 
 end
