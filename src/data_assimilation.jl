@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
 using LinearAlgebra
 using ProgressMeter
+using Distributions
 
 export DataAssimilation
 
@@ -161,84 +163,101 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
     elseif da.method == :PF
 
         # special case for k=1
-        k           = 1
-        k_count     = 0
-        m_xa_traj   = []
-        weights_tmp = zeros(Float64, np)
-        xf          = rand(MvNormal(da.xb, da.B), np)
-        @show ivar_obs    = findall(.!isnan.(yo.u[k]))
+        k          = 1
+        m_xa_traj  = Array{Float64,2}[]
+        xf         = rand(MvNormal(da.xb, da.B), np)
+        ivar_obs   = findall(.!isnan.(yo.u[k]))
+        nobs       = length(ivar_obs)
+        weights    = zeros(Float64, np)
+        indic      = zeros(Int64, np)
       
+        if nobs > 0
 
-        if length(ivar_obs) > 0
-            # weights
             for ip in 1:np
-                weights_tmp[ip] = pdf(yo.u[k][ivar_obs],
-                                  da.H[ivar_obs,:] * xf[:,ip]',
-                                  da.R[ivar_obs,ivar_obs])
+                μ = vec(da.H[ivar_obs,:] * xf[:,ip])
+                σ = Matrix(da.R[ivar_obs,ivar_obs])
+                d = MvNormal(μ, σ)
+                weights[ip] = pdf(d, yo.u[k][ivar_obs])
             end
             # normalization
-            @show weights_tmp ./= sum(weights_tmp)
+            weights ./= sum(weights)
             # resampling
-            indic = resampleMultinomial(weights_tmp)
-            x̂.part[k] = xf[indic,:]
-            weights_tmp_indic = weights_tmp[indic]/sum(weights_tmp[indic])
-            x̂.u[k] = sum(xf[indic,:]*weights_tmp_indic[np.newaxis],0)
+            resample!(indic, weights)
+            x̂.part[k]  .= xf[:,indic]
+            weights    .= weights[indic] ./ sum(weights[indic])            
+            x̂.u[k]     .= vec(sum(x̂.part[k] .* weights', dims=2))
+
             # find number of iterations before new observation
-            k_count_end = minimum(findall(sum(.!isnan.(yo.u[k+1:end]),dims=2) .>= 1))
+            # todo: try the findnext function
+            # findnext(.!isnan.(vcat(yo.u'...)), k+1)
+            knext = 1
+            while knext+k <= nt && all(isnan.(yo.u[k+knext])) 
+                knext +=1
+            end
 
         else
-            # weights
-            weights_tmp .= 1.0 / np
-            # resampling
-            indic = resampleMultinomial(weights_tmp)
-        end
 
-        x̂.weights[:,k] = weights_tmp_indic
-        
+            weights .= 1.0 / np # weights
+            resample!(indic, weights) # resampling
+
+        end
+        @show indic
+
+        x̂.weights[k] .= weights
+
+        kcount = 1
+
         for k in 2:nt
             # update step (compute forecasts) and add small Gaussian noise
-            xf, tej = da.m(x̂.part[k-1]) + rand(zeros(nv),da.B ./ 100.0, np)        
-            if k_count < length(m_xa_traj)
-                m_xa_traj[k_count] = xf
+            xf, tej = da.m(x̂.part[k-1]) 
+            xf .+= rand(MvNormal(zeros(nv), da.B ./ 100.0), np)
+            if kcount <= length(m_xa_traj)
+                m_xa_traj[kcount] .= xf
             else
                 push!(m_xa_traj, xf)
             end
-            k_count += 1
+            kcount += 1
 
             # analysis step (correct forecasts with observations)
-            ivar_obs = findall(.!isnan.(yo.u[k,:]))
+            ivar_obs = findall(.!isnan.(yo.u[k]))
+
             if length(ivar_obs) > 0
                 # weights
-                for i in 1:np
-                    weights_tmp[i] = pdf(yo.u[k][ivar_obs],
-                                     da.H[:,ivar_obs] * xf[:,i]',
-                                     da.R[ivar_obs,ivar_obs])
-                end
+                σ = Symmetric(da.R[ivar_obs,ivar_obs])
+                for ip in 1:np
+                    μ = vec(da.H[ivar_obs,:] * xf[:,ip])
+                    d = MvNormal(μ, σ)
+                    weights[ip] = pdf(d, yo.u[k][ivar_obs])
+                end 
                 # normalization
-                weights_tmp ./= sum(weights_tmp)
+                weights ./= sum(weights)
                 # resampling
-                indic = resampleMultinomial(weights_tmp)
+                resample!(indic, weights)
+                weights .= weights[indic] ./ sum(weights[indic])            
                 # stock results
-                x̂.part[k-k_count_end:k+1] = m_xa_traj[:,indic,:]
-                weights_tmp_indic = weights_tmp[indic]/sum(weights_tmp[indic])            
-                x̂.u[k-k_count_end:k+1] = sum(m_xa_traj[:,indic,:] 
-                                           .* weights_tmp_indic[np.newaxis],1)
-                k_count = 0
+                for j in 1:knext
+                    jm = k-knext+j
+                    for ip in 1:np
+                       x̂.part[jm][:,ip] .= m_xa_traj[j][:,indic[ip]]
+                    end
+                    x̂.u[jm] .= vec(sum( x̂.part[jm] .* weights', dims=2))
+                end
+                kcount = 1
                 # find number of iterations  before new observation
-                try
-                    k_count_end = minimum(findall(sum(.!isnan.(yo.u[:,k+1:end]),dims=2) >= 1))
-                catch ValueError
-                    nothing
+                knext = 1
+                while knext+k <= nt && all(isnan.(yo.u[k+knext])) 
+                    knext +=1
                 end
             else
                 # stock results
-                x̂.part[k] = xf
-                x̂.u[k]    = sum(xf .* weights_tmp_indic', dims=1)
+                x̂.part[k] .= xf
+                x̂.u[k]    .= vec(sum(xf .* weights', dims=2))
             end
             # stock weights
-            x̂.weights[k,:] = weights_tmp_indic 
+            x̂.weights[k] .= weights
 
         end
+
 
     else
 
@@ -246,6 +265,6 @@ function data_assimilation(yo :: TimeSeries, da :: DataAssimilation)
 
     end
     
-    x̂       
+    x̂
 
 end
