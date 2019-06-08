@@ -49,8 +49,8 @@ for regression in [:locally_constant, :increment, :local_linear]
                                 regression = regression,
                                 sampling   = sampling )
         for method in [EnKS(100), EnKF(100), PF(100)]
-            da = DataAssimilation( f, xt, ssm.sigma2_obs )
-            x̂  = data_assimilation(yo, da, method)
+            data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
+            x̂  = data_assimilation(yo, method)
             accuracy = RMSE(xt, x̂) 
             println( " $regression, $sampling, $method : $accuracy ")
             @test accuracy < 2.0
