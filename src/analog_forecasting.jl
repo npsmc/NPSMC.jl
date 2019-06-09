@@ -67,7 +67,7 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
             ivar           = collect(1:nv)
             condition      = false
         else
-            ivar_neighboor = findall(forecasting.neighborhood[ivar,:])
+            ivar_neighboor = findall(vec(forecasting.neighborhood[ivar,:]))
         end
 
         # global analog forecasting
