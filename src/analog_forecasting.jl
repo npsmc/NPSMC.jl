@@ -1,4 +1,4 @@
-using NearestNeighbors
+using NearestNeighbors, PDMats
 
 export AnalogForecasting
 
@@ -139,7 +139,7 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
                 xf_tmp[ivar,:]  .= xf_mean[ivar,ip] .+ res
                 # weigthed covariance
                 cov_xfc = Symmetric((res * (w .* res'))/(1 .- tr(Cxx2 * inv_Cxx)))
-                cov_xf  = Symmetric(cov_xfc .* (1 + tr(Cxx2 * inv_Cxx * X0r * X0r' * inv_Cxx)))
+                cov_xf  = PDMat(cov_xfc .* (1 + tr(Cxx2 * inv_Cxx * X0r * X0r' * inv_Cxx)))
                 # constant weights for local linear
                 weights[ip] .= 1.0/length(weights[ip])
 
