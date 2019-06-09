@@ -33,79 +33,22 @@
 # Here, we import the different Julia packages. In order to use the analog methog (or nearest neighboor search), we need to install the ["NPSMC" library](https://github.com/npsmc/NPSMC.jl).
 
 # + {"nbpresent": {"id": "f975dd20-65cf-43f8-8a6e-96f2acbad4e4"}}
-using Plots, NPSMC, DifferentialEquations
+using Plots, DifferentialEquations
+# -
 
-# + {"nbpresent": {"id": "702967c4-5161-4544-a9f1-88cd5d0155da"}, "cell_type": "markdown"}
-# # TEST ON LORENZ-63
-#
-# To begin, as dynamical model $f$, we use the Lorenz-63 chaotic system. First, we generate simulated trajectories from this dynamical model and store them into the catalog. Then, we use this catalog to emulate the dynamical model and we apply the analog data assimilation. Finally, we compare the results of this data-driven approach to the classical data assimilation (using the true Lorenz-63 equations as dynamical model).
-
-# + {"nbpresent": {"id": "81f56606-9081-47fd-8968-13d85c93063c"}}
-### GENERATE SIMULATED DATA (LORENZ-63 MODEL)
-σ = 10.0
-ρ = 28.0
-β = 8.0/3
-
-dt_integration = 0.01
-dt_states      = 1 
-dt_obs         = 8 
-parameters     = [σ, ρ, β]
-var_obs        = [1]
-nb_loop_train  = 100 
-nb_loop_test   = 10
-sigma2_catalog = 0.0
-sigma2_obs     = 2.0
-
-ssm = StateSpaceModel( lorenz63,
-                       dt_integration, dt_states, dt_obs, 
-                       parameters, var_obs,
-                       nb_loop_train, nb_loop_test,
-                       sigma2_catalog, sigma2_obs )
-
-# compute u0 to be in the attractor space
-u0    = [8.0;0.0;30.0]
-tspan = (0.0,5.0)
-prob  = ODEProblem(ssm.model, u0, tspan, parameters)
-u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
-
-xt, yo, catalog = generate_data( ssm, u0 );
-
-# + {"nbpresent": {"id": "241f9ce2-fe11-4533-be8f-991a700f3920"}}
-plot( xt.t, vcat(xt.u'...)[:,1])
-scatter!( yo.t, vcat(yo.u'...)[:,1]; markersize=2)
-
-# +
-### ANALOG DATA ASSIMILATION (dynamical model given by the catalog)
-
-regression = :local_linear
-sampling   = :gaussian
-f  = AnalogForecasting( 50, xt, catalog; 
-                        regression = regression,
-                        sampling   = sampling )
-data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂_analog  = data_assimilation(yo, EnKS(100))
-RMSE(xt, x̂_analog)
-
-# + {"nbpresent": {"id": "3ed39876-5608-4f08-ba3c-a08d1c1d2c84"}}
-### CLASSICAL DATA ASSIMILATION (dynamical model given by the equations)
-    
-data_assimilation = DataAssimilation( ssm, xt )
-
-@time x̂_classical = data_assimilation(yo, EnKS(100))
-
-rmse = RMSE(xt, x̂_classical)
-
-
-# + {"nbpresent": {"id": "7a6c203f-bcbb-4c52-8b85-7e6be3945044"}}
-### COMPARISON BETWEEN CLASSICAL AND ANALOG DATA ASSIMILATION
-
-plot( xt.t, vcat(xt.u'...)[:,1], label="true state")
-plot!( xt.t, vcat(x̂_classical.u'...)[:,1], label="classical")
-plot!( xt.t, vcat(x̂_analog.u'...)[:,1], label="analog")
-scatter!( yo.t, vcat(yo.u'...)[:,1]; markersize=2, label="observations")
-
-# + {"nbpresent": {"id": "971ff88b-e8dc-43dc-897e-71a7b6b659c0"}, "cell_type": "markdown"}
-# The results show that performances of the data-driven analog data assimilation are closed to those of the model-driven data assimilation. The error can be reduced by augmenting the size of the catalog "nb_loop_train".
+include("../src/models.jl")
+include("../src/time_series.jl")
+include("../src/state_space.jl")
+include("../src/catalog.jl")
+include("../src/plot.jl")
+include("../src/generate_data.jl")
+include("../src/utils.jl")
+include("../src/model_forecasting.jl")
+include("../src/analog_forecasting.jl")
+include("../src/data_assimilation.jl")
+include("../src/ensemble_kalman_filters.jl")
+include("../src/ensemble_kalman_smoothers.jl")
+include("../src/particle_filters.jl")
 
 # + {"nbpresent": {"id": "c4e459e9-33bc-43f1-91e8-5a5d05746979"}, "cell_type": "markdown"}
 # # TEST ON LORENZ-96
@@ -169,9 +112,7 @@ xlabel!("Lorenz-96 times")
 title!("Lorenz-96 true (continuous lines) and observed trajectories (dots)")
 
 # + {"nbpresent": {"id": "604a659e-82bf-4618-95bf-77ef755b9088"}}
-using LinearAlgebra, BandedMatrices
-# global neighborhood (40 variables)
-global_analog_matrix = ones((xt.nv,xt.nv));
+using LinearAlgebra
 
 # + {"nbpresent": {"id": "604a659e-82bf-4618-95bf-77ef755b9088"}}
 local_analog_matrix = BitArray{2}( diagm( -2  => trues(xt.nv-2),
@@ -193,77 +134,78 @@ heatmap(local_analog_matrix)
 # -
 
 ### ANALOG DATA ASSIMILATION (with the global analogs)
+include("../src/analog_forecasting.jl")
+include("../src/data_assimilation.jl")
+f  = AnalogForecasting( 50, xt, catalog, 
+    regression = :local_linear, sampling   = :gaussian)
+data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
+@time x̂_analog  = data_assimilation(yo, EnKS(100))
+RMSE(xt, x̂_analog)
+
+# + {"nbpresent": {"id": "02cf2959-e712-4af8-8bb6-f914608e15ac"}}
+### ANALOG DATA ASSIMILATION (with the local analogs)
+
 neighborhood = local_analog_matrix
 regression = :local_linear
 sampling   = :gaussian
 f  = AnalogForecasting( 100, xt, catalog, neighborhood, regression, sampling)
 data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂_analog  = data_assimilation(yo, EnKS(500))
-RMSE(xt, x̂_analog)
+@time x̂  = data_assimilation(yo, EnKS(500))
+RMSE(xt, x̂)
 
-# + {"nbpresent": {"id": "8150ad94-0ca4-4664-99f2-16b477d0a987"}}
+# +
+import PyPlot
+
+#####################
+##  2x2 Plot Grid  ##
+#####################
+fig = figure("pyplot_subplot_mixed",figsize=(10,10)) # Create a new blank figure
+#fig.set_figheight(7) # Doesn't work
+#fig.set_figwidth(3) # Doesn't work
+subplot(221) # Create the 1st axis of a 2x2 arrax of axes
+grid("on") # Create a grid on the axis
+PyPlot.title("221") # Give the most recent axis a title
+subplot(222,polar="true") # Create a plot and make it a polar plot, 2nd axis of 2x2 axis grid
+PyPlot.title("222")
+ax = subplot(223,polar="true") # Create a plot and make it a polar plot, 3rd axis of 2x2 axis grid
+ax.set_theta_zero_location("N") # Set 0 degrees to the top of the plot
+ax.set_theta_direction(-1) # Switch the polar plot to clockwise
+PyPlot.title("223")
+subplot(224) # Create the 4th axis of a 2x2 arrax of axes
+xlabel("This is an X axis")
+ylabel("This is a y axis")
+PyPlot.title("224")
+fig.canvas.draw() # Update the figure
+suptitle("2x2 Subplot")
+
+# + {"nbpresent": {"id": "35f54171-6e87-4b0f-9cb2-821d9c0d8b96"}}
 
 
-# parameters of the analog forecasting method
-class AF:
-    k = 100; # number of analogs
-    neighborhood = global_analog_matrix # global analogs
-    catalog = catalog # catalog with analogs and successors
-    regression = 'local_linear' # chosen regression ('locally_constant', 'increment', 'local_linear')
-    sampling = 'gaussian' # chosen sampler ('gaussian', 'multinomial')
-
-# parameters of the filtering method
-class DA:
-    method = 'AnEnKS' # chosen method ('AnEnKF', 'AnEnKS', 'AnPF')
-    N = 500 # number of members (AnEnKF/AnEnKS) or particles (AnPF)
-    xb = xt.values[0,:]; B = 0.1*np.eye(xt.values.shape[1])
-    H = np.eye(xt.values.shape[1])
-    R = GD.sigma2_obs*np.eye(xt.values.shape[1])
-    @staticmethod
-    def m(x):
-        return AnDA_analog_forecasting(x,AF)
-    
-# run the analog data assimilation
-x_hat_analog_global = AnDA_data_assimilation(yo, DA)
-
-# + {"nbpresent": {"id": "02cf2959-e712-4af8-8bb6-f914608e15ac"}}
-### ANALOG DATA ASSIMILATION (with the local analogs)
-
-# parameters of the analog forecasting method
-class AF:
-    k = 100 # number of analogs
-    neighborhood = local_analog_matrix # local analogs
-    catalog = catalog # catalog with analogs and successors
-    regression = 'local_linear' # chosen regression ('locally_constant', 'increment', 'local_linear')
-    sampling = 'gaussian' # chosen sampler ('gaussian', 'multinomial')
-
-# parameters of the filtering method
-class DA:
-    method = 'AnEnKS' # chosen method ('AnEnKF', 'AnEnKS', 'AnPF')
-    N = 500 # number of members (AnEnKF/AnEnKS) or particles (AnPF)
-    xb = xt.values[0,:]; B = 0.1*np.eye(xt.values.shape[1])
-    H = np.eye(xt.values.shape[1])
-    R = GD.sigma2_obs*np.eye(xt.values.shape[1])
-    @staticmethod
-    def m(x):
-        return AnDA_analog_forecasting(x,AF)
-    
-# run the analog data assimilation
-x_hat_analog_local = AnDA_data_assimilation(yo, DA)
 
 # + {"nbpresent": {"id": "35f54171-6e87-4b0f-9cb2-821d9c0d8b96"}}
 ### COMPARISON BETWEEN GLOBAL AND LOCAL ANALOG DATA ASSIMILATION
-
+fig = figure(figsize=(10,10))
 # plot
-[X,Y]=meshgrid(range(GD.parameters.J),xt.time)
-subplot(2,2,1);pcolor(X,Y,xt.values);xlim([0,GD.parameters.J-1]);clim([-10,10]);ylabel('Lorenz-96 times');title('True trajectories')
-subplot(2,2,2);pcolor(X,Y,ma.masked_where(isnan(yo.values),yo.values));xlim([0,GD.parameters.J-1]);clim([-10,10]);ylabel('Lorenz-96 times');title('Observed trajectories')
-subplot(2,2,3);pcolor(X,Y,x_hat_analog_global.values);xlim([0,GD.parameters.J-1]);clim([-10,10]);ylabel('Lorenz-96 times');title('Global analog data assimilation')
-subplot(2,2,4);pcolor(X,Y,x_hat_analog_local.values);xlim([0,GD.parameters.J-1]);clim([-10,10]);ylabel('Lorenz-96 times');title('Local analog data assimilation')
+pcolormesh(hcat(xt.u...))
+ylabel('Lorenz-96 times')
+PyPlot.title('True trajectories')
+subplot(222)
+pcolormesh(isnan.(hcat(yo.u..)))
+ylabel('Lorenz-96 times')
+PyPlot.title('Observed trajectories')
+subplot(223)
+pcolormesh(x̂_analog_global.u)
+ylabel('Lorenz-96 times')
+PyPlot.title('Global analog data assimilation')
+subplot(224)
+pcolormesh(hcat(x̂_analog_local.u...))
+ylabel('Lorenz-96 times')
+PyPlot.title('Local analog data assimilation')
 
+# + {"nbpresent": {"id": "35f54171-6e87-4b0f-9cb2-821d9c0d8b96"}}
 # error
-print('RMSE(global analog DA) = ' + str(AnDA_RMSE(xt.values,x_hat_analog_global.values)))
-print('RMSE(local analog DA)  = ' + str(AnDA_RMSE(xt.values,x_hat_analog_local.values)))
+print("RMSE(global analog DA) = $(RMSE(xt,x̂_analog_global))")
+print("RMSE(local analog DA)  = $(RMSE(xt,x̂_analog_local))")
 
 # + {"nbpresent": {"id": "3c8d57d0-c7b5-4ec6-9ecb-d91aaffbf836"}, "cell_type": "markdown"}
 # The results show that the global analog strategy do not reach satisfying results. Indeed, it is difficult to find relevant nearest neighboors on 40-dimensional vectors. The only way to improve the results in such a global strategy is to deeply increase the size of the catalog. At the contrary, in the local analog data assimilation, we are able to track correctly the true trajectories, even with a short catalog.

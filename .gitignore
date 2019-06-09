@@ -20,3 +20,5 @@ examples/generate_data_from_function.ipynb
 docs/src/examples
 examples/kalman.ipynb
 notebooks/test_AnDA.ipynb
+notebooks/lorenz63.ipynb
+notebooks/lorenz96.ipynb
