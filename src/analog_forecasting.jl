@@ -34,6 +34,18 @@ mutable struct AnalogForecasting <: AbstractForecasting
     
     end 
 
+    function AnalogForecasting( k            :: Int64, 
+                                xt           :: TimeSeries, 
+                                catalog      :: Catalog,
+                                neighborhood :: BitArray{2},
+                                regression   :: Symbol,
+                                sampling     :: Symbol )
+    
+    
+        new( k, neighborhood, catalog, regression, sampling)
+    
+    end 
+
 end
 
 """ 
