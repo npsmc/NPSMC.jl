@@ -44,11 +44,7 @@ include("../src/plot.jl")
 include("../src/generate_data.jl")
 include("../src/utils.jl")
 include("../src/model_forecasting.jl")
-include("../src/analog_forecasting.jl")
-include("../src/data_assimilation.jl")
-include("../src/ensemble_kalman_filters.jl")
-include("../src/ensemble_kalman_smoothers.jl")
-include("../src/particle_filters.jl")
+
 
 # + {"nbpresent": {"id": "c4e459e9-33bc-43f1-91e8-5a5d05746979"}, "cell_type": "markdown"}
 # # TEST ON LORENZ-96
@@ -112,9 +108,6 @@ xlabel!("Lorenz-96 times")
 title!("Lorenz-96 true (continuous lines) and observed trajectories (dots)")
 
 # + {"nbpresent": {"id": "604a659e-82bf-4618-95bf-77ef755b9088"}}
-using LinearAlgebra
-
-# + {"nbpresent": {"id": "604a659e-82bf-4618-95bf-77ef755b9088"}}
 local_analog_matrix = BitArray{2}( diagm( -2  => trues(xt.nv-2),
              -1  => trues(xt.nv-1),
               0  => trues(xt.nv),
@@ -136,71 +129,47 @@ heatmap(local_analog_matrix)
 ### ANALOG DATA ASSIMILATION (with the global analogs)
 include("../src/analog_forecasting.jl")
 include("../src/data_assimilation.jl")
-f  = AnalogForecasting( 50, xt, catalog, 
-    regression = :local_linear, sampling   = :gaussian)
+include("../src/ensemble_kalman_filters.jl")
+include("../src/ensemble_kalman_smoothers.jl")
+include("../src/particle_filters.jl")
+f  = AnalogForecasting( 100, xt, catalog, 
+    regression = :locally_constant, sampling = :multinomial)
 data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂_analog  = data_assimilation(yo, EnKS(100))
-RMSE(xt, x̂_analog)
+@time x̂_analog_global  = data_assimilation(yo, EnKS(500))
+RMSE(xt, x̂_analog_global)
 
 # + {"nbpresent": {"id": "02cf2959-e712-4af8-8bb6-f914608e15ac"}}
 ### ANALOG DATA ASSIMILATION (with the local analogs)
 
 neighborhood = local_analog_matrix
-regression = :local_linear
-sampling   = :gaussian
+regression = :locally_constant
+sampling   = :multinomial
 f  = AnalogForecasting( 100, xt, catalog, neighborhood, regression, sampling)
 data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂  = data_assimilation(yo, EnKS(500))
+@time x̂_analog_local  = data_assimilation(yo, EnKS(500))
 RMSE(xt, x̂)
-
-# +
-import PyPlot
-
-#####################
-##  2x2 Plot Grid  ##
-#####################
-fig = figure("pyplot_subplot_mixed",figsize=(10,10)) # Create a new blank figure
-#fig.set_figheight(7) # Doesn't work
-#fig.set_figwidth(3) # Doesn't work
-subplot(221) # Create the 1st axis of a 2x2 arrax of axes
-grid("on") # Create a grid on the axis
-PyPlot.title("221") # Give the most recent axis a title
-subplot(222,polar="true") # Create a plot and make it a polar plot, 2nd axis of 2x2 axis grid
-PyPlot.title("222")
-ax = subplot(223,polar="true") # Create a plot and make it a polar plot, 3rd axis of 2x2 axis grid
-ax.set_theta_zero_location("N") # Set 0 degrees to the top of the plot
-ax.set_theta_direction(-1) # Switch the polar plot to clockwise
-PyPlot.title("223")
-subplot(224) # Create the 4th axis of a 2x2 arrax of axes
-xlabel("This is an X axis")
-ylabel("This is a y axis")
-PyPlot.title("224")
-fig.canvas.draw() # Update the figure
-suptitle("2x2 Subplot")
-
-# + {"nbpresent": {"id": "35f54171-6e87-4b0f-9cb2-821d9c0d8b96"}}
-
-
 
 # + {"nbpresent": {"id": "35f54171-6e87-4b0f-9cb2-821d9c0d8b96"}}
 ### COMPARISON BETWEEN GLOBAL AND LOCAL ANALOG DATA ASSIMILATION
-fig = figure(figsize=(10,10))
+import PyPlot
+fig = PyPlot.figure(figsize=(10,10))
 # plot
-pcolormesh(hcat(xt.u...))
-ylabel('Lorenz-96 times')
-PyPlot.title('True trajectories')
-subplot(222)
-pcolormesh(isnan.(hcat(yo.u..)))
-ylabel('Lorenz-96 times')
-PyPlot.title('Observed trajectories')
-subplot(223)
-pcolormesh(x̂_analog_global.u)
-ylabel('Lorenz-96 times')
-PyPlot.title('Global analog data assimilation')
-subplot(224)
-pcolormesh(hcat(x̂_analog_local.u...))
-ylabel('Lorenz-96 times')
-PyPlot.title('Local analog data assimilation')
+PyPlot.subplot(221)
+PyPlot.pcolormesh(hcat(xt.u...))
+PyPlot.ylabel("Lorenz-96 times")
+PyPlot.title("True trajectories")
+PyPlot.subplot(222)
+PyPlot.pcolormesh(isnan.(hcat(yo.u...)))
+PyPlot.ylabel("Lorenz-96 times")
+PyPlot.title("Observed trajectories")
+PyPlot.subplot(223)
+PyPlot.pcolormesh(hcat(x̂_analog_global.u...))
+PyPlot.ylabel("Lorenz-96 times")
+PyPlot.title("Global analog data assimilation")
+PyPlot.subplot(224)
+PyPlot.pcolormesh(hcat(x̂_analog_local.u...))
+PyPlot.ylabel("Lorenz-96 times")
+PyPlot.title("Local analog data assimilation")
 
 # + {"nbpresent": {"id": "35f54171-6e87-4b0f-9cb2-821d9c0d8b96"}}
 # error
