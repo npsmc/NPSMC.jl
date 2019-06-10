@@ -52,9 +52,9 @@ for regression in [:locally_constant, :increment, :local_linear]
             println( " $regression, $sampling, $method ")
             data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
             x̂  = data_assimilation(yo, method)
-            accuracy = RMSE(xt, x̂) 
-            println( " score = $accuracy ")
-            @test accuracy < 2.0
+            rmse = RMSE(xt, x̂) 
+            println( " rmse = $rmse ")
+            @test rmse < 2.0
         end
     end
 end
