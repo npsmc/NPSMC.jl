@@ -14,7 +14,7 @@ parameters of the analog forecasting method
 - sampling     : (:gaussian, :multinomial)
 
 """
-mutable struct AnalogForecasting <: AbstractForecasting 
+struct AnalogForecasting <: AbstractForecasting 
 
     k             :: Int64 # number of analogs
     neighborhood  :: BitArray{2}
@@ -77,24 +77,30 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
         # parameter of normalization for the kernels
         λ = median(Iterators.flatten(dist_knn))
         # compute weights
-        weights = [exp.(-dist.^2 ./ λ) for dist in dist_knn]
-        weights = [w ./ sum(w) for w in weights]
+        weights  = [exp.(-dist.^2 ./ λ) for dist in dist_knn]
+        weights .= [w ./ sum(w) for w in weights]
 
         # initialization
-        xf_tmp = zeros(Float64, (last(ivar),forecasting.k))
+        xf_tmp  = zeros(Float64, (nv, forecasting.k))
+        xf_mean = zeros(Float64, (nv, np))
 
+        Exf = zeros(Float64,(nv,forecasting.k))
+        cov_xf = zeros(Float64, (nv,nv))
+
+        X  = zeros(Float64, (nv,forecasting.k))
+        Xm = zeros(Float64, nv)
+        Y  = zeros(Float64, (nv,forecasting.k))
+        
         for ip = 1:np
  
             if forecasting.regression == :locally_constant
                 
                 # compute the analog forecasts
                 xf_tmp[ivar,:] .= forecasting.catalog.successors[ivar, index_knn[ip]]
-                
                 # weighted mean and covariance
                 xf_mean[ivar,ip] = sum(xf_tmp[ivar,:] .* weights[ip]',dims=2)
-                Exf   = xf_tmp[ivar,:] .- xf_mean[ivar,ip]
-                cov_xf = Symmetric(1.0 ./(1.0 .- sum(weights[ip].^2)) 
-                                   .* (Exf .* weights[ip]') * Exf')
+                Exf    .= xf_tmp[ivar,:] .- xf_mean[ivar,ip]
+                cov_xf .= 1.0 ./(1.0 .- sum(weights[ip].^2)) .* (Exf .* weights[ip]') * Exf'
 
             elseif forecasting.regression == :increment # method "locally-incremental"
                 
@@ -105,24 +111,23 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
                 
                 # weighted mean and covariance
                 xf_mean[ivar,ip] = sum(xf_tmp[ivar,:] .* weights[ip]',dims=2)
-                Exf = xf_tmp[ivar,:] .- xf_mean[ivar,ip]
-                cov_xf = Symmetric(1.0 ./(1.0 .- sum(weights[ip].^2))
-                                   .* (Exf .* weights[ip]') * Exf')
+                Exf .= xf_tmp[ivar,:] .- xf_mean[ivar,ip]
+                cov_xf .= 1.0 ./(1.0 .- sum(weights[ip].^2)) .* (Exf .* weights[ip]') * Exf'
 
             elseif forecasting.regression == :local_linear
 
                 # define analogs, successors and weights
-                X = forecasting.catalog.analogs[ ivar_neighboor , index_knn[ip]]
-                Y = forecasting.catalog.successors[ ivar, index_knn[ip]]
+                X .= forecasting.catalog.analogs[ ivar_neighboor , index_knn[ip]]
+                Y .= forecasting.catalog.successors[ ivar, index_knn[ip]]
                 w = weights[ip]
                 # compute centered weighted mean and weighted covariance
-                Xm   = sum(X .* w', dims=2)
-                Xc   = X .- Xm
+                Xm   .= vec(sum(X .* w', dims=2))
+                X    .= X .- Xm
                 # use SVD decomposition to compute principal components
-                F    = svd(Xc')
+                F    = svd(X')
                 # keep eigen values higher than 1%
                 ind  = findall(F.S ./ sum(F.S) .> 0.01) 
-                Xr   = vcat( ones(1,size(Xc)[2]), F.Vt[ind,:] * Xc)
+                Xr   = vcat( ones(1,forecasting.k), F.Vt[ind,:] * X)
                 Cxx  = Symmetric((Xr .* w') * Xr')
                 Cxx2 = Symmetric((Xr .* w'.^2) * Xr')
                 Cxy  = (Y  .* w') * Xr'
@@ -131,7 +136,7 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
                 # regression on principal components
                 beta = Cxy * inv_Cxx 
                 X0   = x[ivar_neighboor,ip] .- Xm
-                X0r  = vcat(ones(1,size(X0)[2]), F.Vt[ind,:] * X0 )
+                X0r  = vcat([1], F.Vt[ind,:] * X0 )
                 # weighted mean
                 xf_mean[ivar,ip] = beta * X0r
                 pred             = beta * Xr 
@@ -139,7 +144,7 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
                 xf_tmp[ivar,:]  .= xf_mean[ivar,ip] .+ res
                 # weigthed covariance
                 cov_xfc = Symmetric((res * (w .* res'))/(1 .- tr(Cxx2 * inv_Cxx)))
-                cov_xf  = PDMat(cov_xfc .* (1 + tr(Cxx2 * inv_Cxx * X0r * X0r' * inv_Cxx)))
+                cov_xf .= cov_xfc .* (1 + tr(Cxx2 * inv_Cxx * X0r * X0r' * inv_Cxx))
                 # constant weights for local linear
                 weights[ip] .= 1.0/length(weights[ip])
 
@@ -153,7 +158,7 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
             if forecasting.sampling == :gaussian
 
                 # random sampling from the multivariate Gaussian distribution
-                d = MvNormal(xf_mean[ivar,ip], cov_xf)
+                d = MvNormal(xf_mean[ivar,ip], Symmetric(cov_xf))
                 xf[ivar, ip] .= rand!(d, xf[ivar, ip])
             
             # Multinomial sampling
