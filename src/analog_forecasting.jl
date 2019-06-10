@@ -14,7 +14,7 @@ parameters of the analog forecasting method
 - sampling     : (:gaussian, :multinomial)
 
 """
-mutable struct AnalogForecasting <: AbstractForecasting 
+struct AnalogForecasting <: AbstractForecasting 
 
     k             :: Int64 # number of analogs
     neighborhood  :: BitArray{2}
@@ -83,6 +83,10 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
         # initialization
         xf_tmp = zeros(Float64, (last(ivar),forecasting.k))
 
+        X = zeros(Float64,(nv, forecasting.k))
+        Y = zeros(Float64,(nv, forecasting.k))
+        w = zeros(Float64, forecasting.k)
+
         for ip = 1:np
  
             if forecasting.regression == :locally_constant
@@ -112,17 +116,17 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
             elseif forecasting.regression == :local_linear
 
                 # define analogs, successors and weights
-                X = forecasting.catalog.analogs[ ivar_neighboor , index_knn[ip]]
-                Y = forecasting.catalog.successors[ ivar, index_knn[ip]]
-                w = weights[ip]
+                X .= forecasting.catalog.analogs[ ivar_neighboor , index_knn[ip]]
+                Y .= forecasting.catalog.successors[ ivar, index_knn[ip]]
+                w .= weights[ip]
                 # compute centered weighted mean and weighted covariance
-                Xm   = sum(X .* w', dims=2)
+                Xm   = vec(sum(X .* w', dims=2))
                 Xc   = X .- Xm
                 # use SVD decomposition to compute principal components
                 F    = svd(Xc')
                 # keep eigen values higher than 1%
                 ind  = findall(F.S ./ sum(F.S) .> 0.01) 
-                Xr   = vcat( ones(1,size(Xc)[2]), F.Vt[ind,:] * Xc)
+                Xr   = vcat( ones(forecasting.k)', F.Vt[ind,:] * Xc)
                 Cxx  = Symmetric((Xr .* w') * Xr')
                 Cxx2 = Symmetric((Xr .* w'.^2) * Xr')
                 Cxy  = (Y  .* w') * Xr'
@@ -131,7 +135,7 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
                 # regression on principal components
                 beta = Cxy * inv_Cxx 
                 X0   = x[ivar_neighboor,ip] .- Xm
-                X0r  = vcat(ones(1,size(X0)[2]), F.Vt[ind,:] * X0 )
+                X0r  = vcat([1], F.Vt[ind,:] * X0 )
                 # weighted mean
                 xf_mean[ivar,ip] = beta * X0r
                 pred             = beta * Xr 
