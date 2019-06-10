@@ -30,7 +30,7 @@ function ( da :: DataAssimilation)( yo :: TimeSeries, mc :: EnKS )
     m_xa_part_tmp = similar(xf)
     xf_mean       = similar(xf)
     ef            = similar(xf)
-    Ks            = zeros(Float64,(3,3))
+    Ks            = zeros(Float64,(nv,nv))
 
     @showprogress 1 for k in 1:nt
 
@@ -84,9 +84,9 @@ function ( da :: DataAssimilation)( yo :: TimeSeries, mc :: EnKS )
         else
             m_xa_part_tmp = m_xa_part[k+1]
             tej, m_xa_tmp = da.m(mean(part[k],dims=2))
-            tmp1 = (part[k] .- mean(part[k],dims=2))'
+            tmp1 = part[k] .- mean(part[k],dims=2)
             tmp2 = m_xa_part_tmp .- m_xa_tmp
-            Ks  .= ((tmp1' * tmp2') * inv_using_SVD(pf[k+1],.9999))./(np-1)
+            Ks  .= ((tmp1 * tmp2') * inv_using_SVD(pf[k+1],.9999))./(np-1)
             part[k] .+= Ks * (part[k+1] .- xf_part[k+1])
         end
         x̂.u[k] .= vec(sum(part[k] ./ np, dims=2))
