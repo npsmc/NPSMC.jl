@@ -33,30 +33,17 @@
 # Here, we import the different Julia packages. In order to use the analog methog (or nearest neighboor search), we need to install the ["NPSMC" library](https://github.com/npsmc/NPSMC.jl).
 
 # + {"nbpresent": {"id": "f975dd20-65cf-43f8-8a6e-96f2acbad4e4"}}
-using Plots, DifferentialEquations
-# -
-
-include("../src/models.jl")
-include("../src/time_series.jl")
-include("../src/state_space.jl")
-include("../src/catalog.jl")
-include("../src/plot.jl")
-include("../src/generate_data.jl")
-include("../src/utils.jl")
-include("../src/model_forecasting.jl")
-include("../src/analog_forecasting.jl")
-include("../src/data_assimilation.jl")
-include("../src/ensemble_kalman_filters.jl")
-include("../src/ensemble_kalman_smoothers.jl")
-include("../src/particle_filters.jl")
+using Plots, DifferentialEquations, NPSMC
 
 # + {"nbpresent": {"id": "702967c4-5161-4544-a9f1-88cd5d0155da"}, "cell_type": "markdown"}
 # # TEST ON LORENZ-63
 #
 # To begin, as dynamical model $f$, we use the Lorenz-63 chaotic system. First, we generate simulated trajectories from this dynamical model and store them into the catalog. Then, we use this catalog to emulate the dynamical model and we apply the analog data assimilation. Finally, we compare the results of this data-driven approach to the classical data assimilation (using the true Lorenz-63 equations as dynamical model).
 
+# + {"nbpresent": {"id": "81f56606-9081-47fd-8968-13d85c93063c"}, "cell_type": "markdown"}
+# ### GENERATE SIMULATED DATA (LORENZ-63 MODEL)
+
 # + {"nbpresent": {"id": "81f56606-9081-47fd-8968-13d85c93063c"}}
-### GENERATE SIMULATED DATA (LORENZ-63 MODEL)
 σ = 10.0
 ρ = 28.0
 β = 8.0/3
@@ -88,32 +75,29 @@ xt, yo, catalog = generate_data( ssm, u0 );
 # + {"nbpresent": {"id": "241f9ce2-fe11-4533-be8f-991a700f3920"}}
 plot( xt.t, vcat(xt.u'...)[:,1])
 scatter!( yo.t, vcat(yo.u'...)[:,1]; markersize=2)
-
-# +
-### ANALOG DATA ASSIMILATION (dynamical model given by the catalog)
+# -
 
 regression = :local_linear
-sampling   = :gaussian
-f  = AnalogForecasting( 50, xt, catalog; 
-                        regression = regression,
-                        sampling   = sampling )
-data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂_analog  = data_assimilation(yo, EnKS(100))
-RMSE(xt, x̂_analog)
+sampling = :gaussian
+k, np = 100, 500
 
-# + {"nbpresent": {"id": "3ed39876-5608-4f08-ba3c-a08d1c1d2c84"}}
-### CLASSICAL DATA ASSIMILATION (dynamical model given by the equations)
-    
+# ### CLASSICAL DATA ASSIMILATION (dynamical model given by the catalog)
+
 data_assimilation = DataAssimilation( ssm, xt )
+x̂_classical = data_assimilation(yo, EnKS(np))
+@time RMSE( xt, x̂_classical)
 
-@time x̂_classical = data_assimilation(yo, EnKS(100))
+# ### ANALOG DATA ASSIMILATION (dynamical model given by the catalog)
 
-rmse = RMSE(xt, x̂_classical)
+f  = AnalogForecasting( k, xt, catalog; regression = regression, sampling   = sampling )
+data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
+x̂_analog = data_assimilation(yo, EnKS(np))
+@time RMSE( xt, x̂_analog)
 
+# + {"nbpresent": {"id": "7a6c203f-bcbb-4c52-8b85-7e6be3945044"}, "cell_type": "markdown"}
+# ### COMPARISON BETWEEN CLASSICAL AND ANALOG DATA ASSIMILATION
 
 # + {"nbpresent": {"id": "7a6c203f-bcbb-4c52-8b85-7e6be3945044"}}
-### COMPARISON BETWEEN CLASSICAL AND ANALOG DATA ASSIMILATION
-
 plot( xt.t, vcat(xt.u'...)[:,1], label="true state")
 plot!( xt.t, vcat(x̂_classical.u'...)[:,1], label="classical")
 plot!( xt.t, vcat(x̂_analog.u'...)[:,1], label="analog")
