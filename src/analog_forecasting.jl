@@ -83,8 +83,8 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
         # initialization
         xf_tmp = zeros(Float64, (last(ivar),forecasting.k))
 
-        X = zeros(Float64,(nv, forecasting.k))
-        Y = zeros(Float64,(nv, forecasting.k))
+        X = zeros(Float64,(length(ivar_neighboor), forecasting.k))
+        Y = zeros(Float64,(length(ivar), forecasting.k))
         w = zeros(Float64, forecasting.k)
 
         for ip = 1:np
@@ -143,7 +143,18 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
                 xf_tmp[ivar,:]  .= xf_mean[ivar,ip] .+ res
                 # weigthed covariance
                 cov_xfc = Symmetric((res * (w .* res'))/(1 .- tr(Cxx2 * inv_Cxx)))
-                cov_xf  = PDMat(cov_xfc .* (1 + tr(Cxx2 * inv_Cxx * X0r * X0r' * inv_Cxx)))
+                cov_xf  = Symmetric(cov_xfc .* (1 + tr(Cxx2 * inv_Cxx * X0r * X0r' * inv_Cxx)))
+                if  isposdef(cov_xf)
+                   cov_xf  = PDMat(cov_xfc)
+                else
+                   # compute the analog forecasts
+                   xf_tmp[ivar,:] .= forecasting.catalog.successors[ivar, index_knn[ip]]
+                   # weighted mean and covariance
+                   xf_mean[ivar,ip] = sum(xf_tmp[ivar,:] .* weights[ip]',dims=2)
+                   Exf   = xf_tmp[ivar,:] .- xf_mean[ivar,ip]
+                   cov_xf = PDMat(1.0 ./(1.0 .- sum(weights[ip].^2))
+                                   .* (Exf .* weights[ip]') * Exf')
+                end
                 # constant weights for local linear
                 weights[ip] .= 1.0/length(weights[ip])
 
