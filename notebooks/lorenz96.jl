@@ -95,8 +95,7 @@ plot!(sol.t, x40)
 # run the data generation
 xt, yo, catalog = generate_data(ssm, u0);
 
-# +
-### PLOT STATE, OBSERVATIONS AND CATALOG
+# ### PLOT STATE, OBSERVATIONS AND CATALOG
 
 plot(xt.t,  vcat(xt.u'...)[:,1], line=(:solid,:red), label="x1")
 scatter!(yo.t, vcat(yo.u'...)[:,1], markersize=2)
@@ -106,6 +105,17 @@ plot!(xt.t, vcat(xt.u'...)[:,40],line=(:solid,:green), label="x40")
 scatter!(yo.t, vcat(yo.u'...)[:,40],markersize=2)
 xlabel!("Lorenz-96 times")
 title!("Lorenz-96 true (continuous lines) and observed trajectories (dots)")
+
+# ### MODEL DATA ASSIMILATION (with the global analogs)
+
+include("../src/analog_forecasting.jl")
+include("../src/data_assimilation.jl")
+include("../src/ensemble_kalman_filters.jl")
+include("../src/ensemble_kalman_smoothers.jl")
+include("../src/particle_filters.jl")
+data_assimilation = DataAssimilation( ssm, xt )
+@time x̂_classical_global  = data_assimilation(yo, EnKS(500))
+RMSE(xt, x̂_classical_global)
 
 # + {"nbpresent": {"id": "604a659e-82bf-4618-95bf-77ef755b9088"}}
 local_analog_matrix = BitArray{2}( diagm( -2  => trues(xt.nv-2),
@@ -126,14 +136,15 @@ heatmap(local_analog_matrix)
 # To define the local or global analog forecasting, we generate different matrices that will be use as the "AF.neighborhood" argument. For each variable of the system, we use 0 or 1 to indicate the absence or presence of other variables in the analog forecasting procedure. For instance, in the local analog matrix defined above, to predict the variable $x_2$ at time t+dt, we will use the local variables $x_1$, $x_2$, $x_3$, $x_4$ and $x_{40}$ at time t.
 # -
 
-### ANALOG DATA ASSIMILATION (with the global analogs)
+# ### ANALOG DATA ASSIMILATION (with the global analogs)
+
 include("../src/analog_forecasting.jl")
 include("../src/data_assimilation.jl")
 include("../src/ensemble_kalman_filters.jl")
 include("../src/ensemble_kalman_smoothers.jl")
 include("../src/particle_filters.jl")
 f  = AnalogForecasting( 100, xt, catalog, 
-    regression = :locally_constant, sampling = :multinomial)
+    regression = :local_linear, sampling = :gaussian)
 data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
 @time x̂_analog_global  = data_assimilation(yo, EnKS(500))
 RMSE(xt, x̂_analog_global)
@@ -142,11 +153,11 @@ RMSE(xt, x̂_analog_global)
 ### ANALOG DATA ASSIMILATION (with the local analogs)
 
 neighborhood = local_analog_matrix
-regression = :locally_constant
-sampling   = :multinomial
+regression = :local_linear
+sampling   = :gaussian
 f  = AnalogForecasting( 100, xt, catalog, neighborhood, regression, sampling)
 data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂_analog_local  = data_assimilation(yo, EnKS(500))
+@time x̂_analog_local  = data_assimilation(yo, EnKS(100))
 RMSE(xt, x̂)
 
 # + {"nbpresent": {"id": "35f54171-6e87-4b0f-9cb2-821d9c0d8b96"}}
