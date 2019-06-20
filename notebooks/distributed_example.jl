@@ -1,7 +1,7 @@
 using Distributed
 using Plots
 
-addprocs(16)
+addprocs(8)
 
 @everywhere begin
 
@@ -31,7 +31,7 @@ p1 = plot(title="1 process")
 end
 
 @info " Parallel version "
-p2 = plot(title="4 processes")
+p2 = plot(title="$(nprocs()) processes")
 @time for β=βs
     z = @distributed (+) for p=1:nprocs()
         fit(Histogram, [stochastic(β) for i = 1:t], -4:0.01:1).weights
