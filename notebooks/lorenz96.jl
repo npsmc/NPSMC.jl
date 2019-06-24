@@ -7,7 +7,7 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.4'
-#       jupytext_version: 1.1.3
+#       jupytext_version: 1.1.6
 #   kernelspec:
 #     display_name: Julia 1.1.1
 #     language: julia
@@ -143,6 +143,7 @@ include("../src/data_assimilation.jl")
 include("../src/ensemble_kalman_filters.jl")
 include("../src/ensemble_kalman_smoothers.jl")
 include("../src/particle_filters.jl")
+
 f  = AnalogForecasting( 100, xt, catalog, 
     regression = :local_linear, sampling = :gaussian)
 data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
@@ -157,8 +158,8 @@ regression = :local_linear
 sampling   = :gaussian
 f  = AnalogForecasting( 100, xt, catalog, neighborhood, regression, sampling)
 data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂_analog_local  = data_assimilation(yo, EnKS(100))
-RMSE(xt, x̂)
+@time x̂_analog_local  = data_assimilation(yo, EnKS(500))
+RMSE(xt, x̂_analog_local)
 
 # + {"nbpresent": {"id": "35f54171-6e87-4b0f-9cb2-821d9c0d8b96"}}
 ### COMPARISON BETWEEN GLOBAL AND LOCAL ANALOG DATA ASSIMILATION
