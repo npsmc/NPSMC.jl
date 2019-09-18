@@ -121,3 +121,13 @@ function resample!( indx :: Vector{Int64}, w :: Vector{Float64} )
         i = i+1
     end
 end
+
+"""
+    ensure_pos_sym(M::Matrix{T}; ϵ::T = 1e-8) where T <: AbstractFloat
+Ensure that matrix `M` is positive and symmetric to avoid numerical errors when numbers are small by doing `(M + M')/2 + ϵ*I`
+
+reference : [StateSpaceModels.jl](https://github.com/LAMPSPUC/StateSpaceModels.jl)
+"""
+function ensure_pos_sym(M::Matrix{T}; ϵ::T = 1e-8) where T <: AbstractFloat
+    return (M + M')/2 + ϵ*I
+end
