@@ -41,4 +41,5 @@ and bring `NPSMC` into scope:
 
 ```julia
 julia> using NPSMC
+julia> include("notebooks/lorenz63.jl")
 ```
