@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>GENERATE SIMULATED DATA (LORENZ-96 MODEL) · NPSMC.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link href="../../assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><a href="../../"><img class="logo" src="../../assets/logo.png" alt="NPSMC.jl logo"/></a><h1>NPSMC.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../../search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../../">Home</a></li><li><a class="toctext" href="../../example/">Example</a></li></ul></nav><article id="docs"><header><nav><ul><li><a href>GENERATE SIMULATED DATA (LORENZ-96 MODEL)</a></li></ul><a class="edit-page" href="https://github.com/npsmc/NPSMC.jl/blob/master/docs/src/examples/lorenz96.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>GENERATE SIMULATED DATA (LORENZ-96 MODEL)</span><a class="fa fa-bars" href="#"></a></div></header><hr/><p>jupyter:   jupytext:     formats: ipynb,jl:light     text<em>representation:       extension: .md       format</em>name: markdown       format<em>version: &#39;1.1&#39;       jupytext</em>version: 1.1.3   kernelspec:     display_name: Julia 1.1.1     language: julia     name: julia-1.1 –-</p><h1><a class="nav-anchor" id="GENERATE-SIMULATED-DATA-(LORENZ-96-MODEL)-1" href="#GENERATE-SIMULATED-DATA-(LORENZ-96-MODEL)-1">GENERATE SIMULATED DATA (LORENZ-96 MODEL)</a></h1><pre><code class="language-julia">using Plots, DifferentialEquations, Random</code></pre><pre><code class="language-julia">include(&quot;../src/models.jl&quot;)
+include(&quot;../src/time_series.jl&quot;)
+include(&quot;../src/state_space.jl&quot;)
+include(&quot;../src/catalog.jl&quot;)
+include(&quot;../src/generate_data.jl&quot;)</code></pre><pre><code class="language-julia">F = 8
+J = 40 :: Int64
+parameters = [F, J]
+dt_integration = 0.05 # integration time
+dt_states = 1 # number of integration times between consecutive states (for xt and catalog)
+dt_obs = 4 # number of integration times between consecutive observations (for yo)
+var_obs = randperm(MersenneTwister(1234), J)[1:20] # indices of the observed variables
+nb_loop_train = 100 # size of the catalog
+nb_loop_test = 10 # size of the true state and noisy observations
+sigma2_catalog = 0.   # variance of the model error to generate the catalog   
+sigma2_obs = 2. # variance of the observation error to generate observations
+
+ssm = StateSpaceModel( lorenz96, 
+                       dt_integration, dt_states, dt_obs, 
+                       parameters, var_obs,
+                       nb_loop_train, nb_loop_test,
+                       sigma2_catalog, sigma2_obs )</code></pre><p>5 time steps (to be in the attractor space)</p><p>Checks if the inegration function is well implemented.</p><pre><code class="language-julia">u0 = F .* ones(Float64, J)
+u0[J÷2] = u0[J÷2] + 0.01
+
+tspan = (0.0,5.0)
+p = [F, J]
+prob  = ODEProblem(lorenz96, u0, tspan, p)
+sol = solve(prob, reltol=1e-6, saveat= dt_integration)
+x1  = [x[1] for x in sol.u]
+x20 = [x[20] for x in sol.u]
+x40 = [x[40] for x in sol.u]
+plot(sol.t, x1)
+plot!(sol.t, x20)
+plot!(sol.t, x40)</code></pre><p>Generate data and catalog</p><pre><code class="language-julia"># run the data generation
+xt, yo, catalog = generate_data(ssm, u0);</code></pre><h3><a class="nav-anchor" id="PLOT-STATE,-OBSERVATIONS-AND-CATALOG-1" href="#PLOT-STATE,-OBSERVATIONS-AND-CATALOG-1">PLOT STATE, OBSERVATIONS AND CATALOG</a></h3><pre><code class="language-julia"># state and observations (when available)
+plot(xt.time,  vcat(xt.values&#39;...)[:,1], line=(:solid,:red), label=&quot;x1&quot;)
+scatter!(yo.time, vcat(yo.values&#39;...)[:,1], markersize=2)
+plot!(xt.time, vcat(xt.values&#39;...)[:,20],line=(:solid,:blue), label=&quot;x20&quot;)
+scatter!(yo.time, vcat(yo.values&#39;...)[:,20],markersize=2)
+plot!(xt.time, vcat(xt.values&#39;...)[:,40],line=(:solid,:green), label=&quot;x40&quot;)
+scatter!(yo.time, vcat(yo.values&#39;...)[:,40],markersize=2)
+xlabel!(&quot;Lorenz-96 times&quot;)
+title!(&quot;Lorenz-96 true (continuous lines) and observed trajectories (dots)&quot;)</code></pre><pre><code class="language-julia"></code></pre><footer><hr/></footer></article></body></html>

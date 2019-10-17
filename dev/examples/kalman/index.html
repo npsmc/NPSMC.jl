@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>A First Look at the Kalman Filter · NPSMC.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link href="../../assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><a href="../../"><img class="logo" src="../../assets/logo.png" alt="NPSMC.jl logo"/></a><h1>NPSMC.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../../search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../../">Home</a></li><li><a class="toctext" href="../../example/">Example</a></li></ul></nav><article id="docs"><header><nav><ul><li><a href>A First Look at the Kalman Filter</a></li></ul><a class="edit-page" href="https://github.com/npsmc/NPSMC.jl/blob/master/docs/src/examples/kalman.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>A First Look at the Kalman Filter</span><a class="fa fa-bars" href="#"></a></div></header><hr/><p>jupyter:   jupytext:     formats: ipynb,md     text<em>representation:       extension: .md       format</em>name: markdown       format<em>version: &#39;1.1&#39;       jupytext</em>version: 1.1.3   kernelspec:     display_name: Julia 1.1.1     language: julia     name: julia-1.1 –-</p><p>&lt;!– #region –&gt;</p><h1><a class="nav-anchor" id="A-First-Look-at-the-Kalman-Filter-1" href="#A-First-Look-at-the-Kalman-Filter-1">A First Look at the Kalman Filter</a></h1><p>&lt;a id=&#39;index-0&#39;&gt;&lt;/a&gt; &lt;!– #endregion –&gt;</p><h2><a class="nav-anchor" id="Contents-1" href="#Contents-1">Contents</a></h2><ul><li><a href="#A-First-Look-at-the-Kalman-Filter">A First Look at the Kalman Filter</a>  <ul><li><a href="#Overview">Overview</a>  </li><li><a href="#The-Basic-Idea">The Basic Idea</a>  </li><li><a href="#Convergence">Convergence</a>  </li><li><a href="#Implementation">Implementation</a>  </li><li><a href="#Exercises">Exercises</a>  </li><li><a href="#Solutions">Solutions</a>  </li></ul></li></ul><p>&lt;!– #region –&gt;</p><h2><a class="nav-anchor" id="Overview-1" href="#Overview-1">Overview</a></h2><p>This lecture provides a simple and intuitive introduction to the Kalman filter, for those who either</p><ul><li>have heard of the Kalman filter but don’t know how it works, or  </li><li>know the Kalman filter equations, but don’t know where they come from  </li></ul><p>For additional (more advanced) reading on the Kalman filter, see</p><ul><li><a href="https://lectures.quantecon.org/jl/zreferences.html#ljungqvist2012">[LS18]</a>, section 2.7.  </li><li><a href="https://lectures.quantecon.org/jl/zreferences.html#andersonmoore2005">[AM05]</a>  </li></ul><p>The second reference presents a  comprehensive treatment of the Kalman filter</p><p>Required knowledge: Familiarity with matrix manipulations, multivariate normal distributions, covariance matrices, etc. &lt;!– #endregion –&gt;</p><h3><a class="nav-anchor" id="Setup-1" href="#Setup-1">Setup</a></h3><pre><code class="language-julia">using InstantiateFromURL
+activate_github(&quot;QuantEcon/QuantEconLecturePackages&quot;, tag = &quot;v0.9.7&quot;);</code></pre><pre><code class="language-julia">using LinearAlgebra, Statistics, Compat</code></pre><p>&lt;!– #region –&gt;</p><h2><a class="nav-anchor" id="The-Basic-Idea-1" href="#The-Basic-Idea-1">The Basic Idea</a></h2><p>The Kalman filter has many applications in economics, but for now let’s pretend that we are rocket scientists</p><p>A missile has been launched from country Y and our mission is to track it</p><p>Let $ x  \in \mathbb{R}^2 $ denote the current location of the missile—a pair indicating latitude-longitute coordinates on a map</p><p>At the present moment in time, the precise location $ x $ is unknown, but we do have some beliefs about $ x $</p><p>One way to summarize our knowledge is a point prediction $ \hat x $</p><ul><li>But what if the President wants to know the probability that the missile is currently over the Sea of Japan?  </li><li>Then it is better to summarize our initial beliefs with a bivariate probability density $ p $  <ul><li>$ \int_E p(x)dx $ indicates the probability that we attach to the missile being in region $ E $  </li></ul></li></ul><p>The density $ p $ is called our <em>prior</em> for the random variable $ x $</p><p>To keep things tractable in our example,  we  assume that our prior is Gaussian. In particular, we take</p><p>&lt;a id=&#39;equation-prior&#39;&gt;&lt;/a&gt; $ p = N(\hat x, \Sigma) \tag{1} $</p><p>where $ \hat x $ is the mean of the distribution and $ \Sigma $ is a $ 2 \times 2 $ covariance matrix.  In our simulations, we will suppose that</p><p>&lt;a id=&#39;equation-kalman-dhxs&#39;&gt;&lt;/a&gt; $ \hat x = \left( \begin{array}{c}     0.2 \
+    -0.2 \end{array}   \right), \qquad \Sigma = \left( \begin{array}{cc}     0.4 &amp; 0.3 \
+    0.3 &amp; 0.45 \end{array}   \right) \tag{2} $</p><p>This density $ p(x) $ is shown below as a contour map, with the center of the red ellipse being equal to $ \hat x $ &lt;!– #endregion –&gt;</p><pre><code class="language-julia">using Plots, Distributions
+
+gr(fmt = :png); # plots setup</code></pre><pre><code class="language-julia"># set up prior objects
+Σ = [0.4  0.3
+     0.3  0.45]
+x̂ = [0.2, -0.2]
+
+# define G and R from the equation y = Gx + N(0, R)
+G = I # this is a generic identity object that conforms to the right dimensions
+R = 0.5 .* Σ
+
+# define A and Q
+A = [1.2  0
+     0   -0.2]
+Q = 0.3Σ
+
+y = [2.3, -1.9]
+
+# plotting objects
+x_grid = range(-1.5, 2.9, length = 100)
+y_grid = range(-3.1, 1.7, length = 100)
+
+# generate distribution
+dist = MvNormal(x̂, Σ)
+two_args_to_pdf(dist) = (x, y) -&gt; pdf(dist, [x, y]) # returns a function to be plotted
+
+# plot
+contour(x_grid, y_grid, two_args_to_pdf(dist), fill = false,
+        color = :lighttest, cbar = false)
+#contour!(x_grid, y_grid, two_args_to_pdf(dist), fill = false, lw=1,
+#         color = :grays, cbar = false)</code></pre><h3><a class="nav-anchor" id="The-Filtering-Step-1" href="#The-Filtering-Step-1">The Filtering Step</a></h3><p>We are now presented with some good news and some bad news</p><p>The good news is that the missile has been located by our sensors, which report that the current location is $ y = (2.3, -1.9) $</p><p>The next figure shows the original prior $ p(x) $ and the new reported location $ y $</p><pre><code class="language-julia"># plot the figure
+annotate!(y[1], y[2], &quot;🚀&quot;, color = :black)</code></pre><p>&lt;!– #region –&gt; The bad news is that our sensors are imprecise.</p><p>In particular, we should interpret the output of our sensor not as $ y=x $, but rather as</p><p>&lt;a id=&#39;equation-kl-measurement-model&#39;&gt;&lt;/a&gt; $ y = G x + v, \quad \text{where} \quad v \sim N(0, R) \tag{3} $</p><p>Here $ G $ and $ R $ are $ 2 \times 2 $ matrices with $ R $ positive definite.  Both are assumed known, and the noise term $ v $ is assumed to be independent of $ x $</p><p>How then should we combine our prior $ p(x) = N(\hat x, \Sigma) $ and this new information $ y $ to improve our understanding of the location of the missile?</p><p>As you may have guessed, the answer is to use Bayes’ theorem, which tells us to  update our prior $ p(x) $ to $ p(x \,|\, y) $ via</p>$<p>p(x \,|\, y) = \frac{p(y \,|\, x) \, p(x)} {p(y)} $</p><p>where $ p(y) = \int p(y \,|\, x) \, p(x) dx $</p><p>In solving for $ p(x \,|\, y) $, we observe that</p><ul><li>$ p(x) = N(\hat x, \Sigma) $  </li><li>In view of <a href="#equation-kl-measurement-model">(3)</a>, the conditional density $ p(y \,|\, x) $ is $ N(Gx, R) $  </li><li>$ p(y) $ does not depend on $ x $, and enters into the calculations only as a normalizing constant  </li></ul><p>Because we are in a linear and Gaussian framework, the updated density can be computed by calculating population linear regressions</p><p>In particular, the solution is known &lt;sup&gt;&lt;a href=#f1 id=f1-link&gt;[1]&lt;/a&gt;&lt;/sup&gt; to be</p>$<p>p(x \,|\, y) = N(\hat x^F, \Sigma^F) $</p><p>where</p><p>&lt;a id=&#39;equation-kl-filter-exp&#39;&gt;&lt;/a&gt; $ \hat x^F := \hat x + \Sigma G&#39; (G \Sigma G&#39; + R)^{-1}(y - G \hat x) \quad \text{and} \quad \Sigma^F := \Sigma - \Sigma G&#39; (G \Sigma G&#39; + R)^{-1} G \Sigma \tag{4} $</p><p>Here  $ \Sigma G&#39; (G \Sigma G&#39; + R)^{-1} $ is the matrix of population regression coefficients of the hidden object $ x - \hat x $ on the surprise $ y - G \hat x $</p><p>This new density $ p(x \,|\, y) = N(\hat x^F, \Sigma^F) $ is shown in the next figure via contour lines and the color map</p><p>The original density is left in as contour lines for comparison &lt;!– #endregion –&gt;</p><pre><code class="language-julia"># define posterior objects
+M = Σ * G&#39; * inv(G * Σ * G&#39; + R)
+x̂_F = x̂ + M * (y - G * x̂)
+Σ_F = Σ - M * G * Σ
+
+# plot the new density on the old plot
+newdist = MvNormal(x̂_F, Symmetric(Σ_F)) # because Σ_F
+contour!(x_grid, y_grid, two_args_to_pdf(newdist), fill = false,
+         color = :lighttest, cbar = false)
+contour!(x_grid, y_grid, two_args_to_pdf(newdist), fill = false, levels = 7,
+         color = :grays, cbar = false)
+contour!(x_grid, y_grid, two_args_to_pdf(dist), fill = false, levels = 7, lw=1,
+         color = :grays, cbar = false)</code></pre><p>&lt;!– #region –&gt; Our new density twists the prior $ p(x) $ in a direction determined by  the new information $ y - G \hat x $</p><p>In generating the figure, we set $ G $ to the identity matrix and $ R = 0.5 \Sigma $ for $ \Sigma $ defined in <a href="#equation-kalman-dhxs">(2)</a></p><p>&lt;a id=&#39;kl-forecase-step&#39;&gt;&lt;/a&gt; &lt;!– #endregion –&gt;</p><p>&lt;!– #region –&gt;</p><h3><a class="nav-anchor" id="The-Forecast-Step-1" href="#The-Forecast-Step-1">The Forecast Step</a></h3><p>What have we achieved so far?</p><p>We have obtained probabilities for the current location of the state (missile) given prior and current information</p><p>This is called “filtering” rather than forecasting, because we are filtering out noise rather than looking into the future</p><ul><li>$ p(x \,|\, y) = N(\hat x^F, \Sigma^F) $ is called the <em>filtering distribution</em>  </li></ul><p>But now let’s suppose that we are given another task: to predict the location of the missile after one unit of time (whatever that may be) has elapsed</p><p>To do this we need a model of how the state evolves</p><p>Let’s suppose that we have one, and that it’s linear and Gaussian. In particular,</p><p>&lt;a id=&#39;equation-kl-xdynam&#39;&gt;&lt;/a&gt; $ x<em>{t+1} = A x</em>t + w<em>{t+1}, \quad \text{where} \quad w</em>t \sim N(0, Q) \tag{5} $</p><p>Our aim is to combine this law of motion and our current distribution $ p(x \,|\, y) = N(\hat x^F, \Sigma^F) $ to come up with a new <em>predictive</em> distribution for the location in one unit of time</p><p>In view of <a href="#equation-kl-xdynam">(5)</a>, all we have to do is introduce a random vector $ x^F \sim N(\hat x^F, \Sigma^F) $ and work out the distribution of $ A x^F + w $ where $ w $ is independent of $ x^F $ and has distribution $ N(0, Q) $</p><p>Since linear combinations of Gaussians are Gaussian, $ A x^F + w $ is Gaussian</p><p>Elementary calculations and the expressions in <a href="#equation-kl-filter-exp">(4)</a> tell us that</p>$<p>\mathbb{E} [A x^F + w] = A \mathbb{E} x^F + \mathbb{E} w = A \hat x^F = A \hat x + A \Sigma G&#39; (G \Sigma G&#39; + R)^{-1}(y - G \hat x) $</p><p>and</p>$<p>\operatorname{Var} [A x^F + w] = A \operatorname{Var}[x^F] A&#39; + Q = A \Sigma^F A&#39; + Q = A \Sigma A&#39; - A \Sigma G&#39; (G \Sigma G&#39; + R)^{-1} G \Sigma A&#39; + Q $</p><p>The matrix $ A \Sigma G&#39; (G \Sigma G&#39; + R)^{-1} $ is often written as $ K_{\Sigma} $ and called the <em>Kalman gain</em></p><ul><li>The subscript $ \Sigma $ has been added to remind us that  $ K_{\Sigma} $ depends on $ \Sigma $, but not $ y $ or $ \hat x $  </li></ul><p>Using this notation, we can summarize our results as follows</p><p>Our updated prediction is the density $ N(\hat x<em>{new}, \Sigma</em>{new}) $ where</p><p>&lt;a id=&#39;equation-kl-mlom0&#39;&gt;&lt;/a&gt; $ \begin{aligned}     \hat x<em>{new} &amp;:= A \hat x + K</em>{\Sigma} (y - G \hat x) \
+    \Sigma<em>{new} &amp;:= A \Sigma A&#39; - K</em>{\Sigma} G \Sigma A&#39; + Q \nonumber \end{aligned} \tag{6} $</p><ul><li>The density $ p<em>{new}(x) = N(\hat x</em>{new}, \Sigma_{new}) $ is called the <em>predictive distribution</em>  </li></ul><p>The predictive distribution is the new density shown in the following figure, where the update has used parameters</p>$<p>A = \left( \begin{array}{cc}     1.2 &amp; 0.0 \
+    0.0 &amp; -0.2 \end{array}   \right),   \qquad Q = 0.3 * \Sigma $ &lt;!– #endregion –&gt;</p><pre><code class="language-julia"># get the predictive distribution
+new_x̂ = A * x̂_F
+new_Σ = A * Σ_F * A&#39; + Q
+predictdist = MvNormal(new_x̂, Symmetric(new_Σ))
+
+# plot Density 3
+contour(x_grid, y_grid, two_args_to_pdf(predictdist), fill = false, lw = 1,
+        color = :lighttest, cbar = false)
+contour!(x_grid, y_grid, two_args_to_pdf(dist),
+         color = :grays, cbar = false)
+contour!(x_grid, y_grid, two_args_to_pdf(newdist), fill = false, levels = 7,
+         color = :grays, cbar = false)
+annotate!(y[1], y[2], &quot;\U1F680&quot;, color = :black)</code></pre><p>&lt;!– #region –&gt;</p><h3><a class="nav-anchor" id="The-Recursive-Procedure-1" href="#The-Recursive-Procedure-1">The Recursive Procedure</a></h3><p>&lt;a id=&#39;index-1&#39;&gt;&lt;/a&gt; Let’s look back at what we’ve done</p><p>We started the current period with a prior $ p(x) $ for the location $ x $ of the missile</p><p>We then used the current measurement $ y $ to update to $ p(x \,|\, y) $</p><p>Finally, we used the law of motion <a href="#equation-kl-xdynam">(5)</a> for $ {x<em>t} $ to update to $ p</em>{new}(x) $</p><p>If we now step into the next period, we are ready to go round again, taking $ p_{new}(x) $ as the current prior</p><p>Swapping notation $ p<em>t(x) $ for $ p(x) $ and $ p</em>{t+1}(x) $ for $ p_{new}(x) $, the full recursive procedure is:</p><ol><li>Start the current period with prior $ p<em>t(x) = N(\hat x</em>t, \Sigma_t) $  </li><li>Observe current measurement $ y_t $  </li><li>Compute the filtering distribution $ p<em>t(x \,|\, y) = N(\hat x</em>t^F, \Sigma<em>t^F) $ from $ p</em>t(x) $ and $ y_t $, applying Bayes rule and the conditional distribution <a href="#equation-kl-measurement-model">(3)</a>  </li><li>Compute the predictive distribution $ p<em>{t+1}(x) = N(\hat x</em>{t+1}, \Sigma_{t+1}) $ from the filtering distribution and <a href="#equation-kl-xdynam">(5)</a>  </li><li>Increment $ t $ by one and go to step 1  </li></ol><p>Repeating <a href="#equation-kl-mlom0">(6)</a>, the dynamics for $ \hat x<em>t $ and $ \Sigma</em>t $ are as follows</p><p>&lt;a id=&#39;equation-kalman-lom&#39;&gt;&lt;/a&gt; $ \begin{aligned}     \hat x<em>{t+1} &amp;= A \hat x</em>t + K<em>{\Sigma</em>t} (y<em>t - G \hat x</em>t) \
+    \Sigma<em>{t+1} &amp;= A \Sigma</em>t A&#39; - K<em>{\Sigma</em>t} G \Sigma_t A&#39; + Q \nonumber \end{aligned} \tag{7} $</p><p>These are the standard dynamic equations for the Kalman filter (see, for example, <a href="https://lectures.quantecon.org/jl/zreferences.html#ljungqvist2012">[LS18]</a>, page 58)</p><p>&lt;a id=&#39;kalman-convergence&#39;&gt;&lt;/a&gt; &lt;!– #endregion –&gt;</p><p>&lt;!– #region –&gt;</p><h2><a class="nav-anchor" id="Convergence-1" href="#Convergence-1">Convergence</a></h2><p>The matrix $ \Sigma<em>t $ is a measure of the uncertainty of our prediction $ \hat x</em>t $ of $ x_t $</p><p>Apart from special cases, this uncertainty will never be fully resolved, regardless of how much time elapses</p><p>One reason is that our prediction $ \hat x_t $ is made based on information available at $ t-1 $, not $ t $</p><p>Even if we know the precise value of $ x<em>{t-1} $ (which we don’t), the transition equation <a href="#equation-kl-xdynam">(5)</a> implies that $ x</em>t = A x<em>{t-1} + w</em>t $</p><p>Since the shock $ w<em>t $ is not observable at $ t-1 $, any time $ t-1 $ prediction of $ x</em>t $ will incur some error (unless $ w_t $ is degenerate)</p><p>However, it is certainly possible that $ \Sigma_t $ converges to a constant matrix as $ t \to \infty $</p><p>To study this topic, let’s expand the second equation in <a href="#equation-kalman-lom">(7)</a>:</p><p>&lt;a id=&#39;equation-kalman-sdy&#39;&gt;&lt;/a&gt; $ \Sigma<em>{t+1} = A \Sigma</em>t A&#39; -  A \Sigma<em>t G&#39; (G \Sigma</em>t G&#39; + R)^{-1} G \Sigma_t A&#39; + Q \tag{8} $</p><p>This is a nonlinear difference equation in $ \Sigma_t $</p><p>A fixed point of <a href="#equation-kalman-sdy">(8)</a> is a constant matrix $ \Sigma $ such that</p><p>&lt;a id=&#39;equation-kalman-dare&#39;&gt;&lt;/a&gt; $ \Sigma = A \Sigma A&#39; -  A \Sigma G&#39; (G \Sigma G&#39; + R)^{-1} G \Sigma A&#39; + Q \tag{9} $</p><p>Equation <a href="#equation-kalman-sdy">(8)</a> is known as a discrete time Riccati difference equation</p><p>Equation <a href="#equation-kalman-dare">(9)</a> is known as a <a href="https://en.wikipedia.org/wiki/Algebraic_Riccati_equation">discrete time algebraic Riccati equation</a></p><p>Conditions under which a fixed point exists and the sequence $ {\Sigma_t} $ converges to it are discussed in <a href="https://lectures.quantecon.org/jl/zreferences.html#ahms1996">[AHMS96]</a> and <a href="https://lectures.quantecon.org/jl/zreferences.html#andersonmoore2005">[AM05]</a>, chapter 4</p><p>A sufficient (but not necessary) condition is that all the eigenvalues $ \lambda<em>i $ of $ A $ satisfy $ |\lambda</em>i| &lt; 1 $ (cf. e.g., <a href="https://lectures.quantecon.org/jl/zreferences.html#andersonmoore2005">[AM05]</a>, p. 77)</p><p>(This strong condition assures that the unconditional  distribution of $ x_t $  converges as $ t \rightarrow + \infty $)</p><p>In this case, for any initial choice of $ \Sigma<em>0 $ that is both nonnegative and symmetric, the sequence $ {\Sigma</em>t} $ in <a href="#equation-kalman-sdy">(8)</a> converges to a nonnegative symmetric matrix $ \Sigma $ that solves <a href="#equation-kalman-dare">(9)</a> &lt;!– #endregion –&gt;</p><p>&lt;!– #region –&gt;</p><h2><a class="nav-anchor" id="Implementation-1" href="#Implementation-1">Implementation</a></h2><p>&lt;a id=&#39;index-2&#39;&gt;&lt;/a&gt; The <a href="http://quantecon.org/julia_index.html">QuantEcon.jl</a> package is able to implement the Kalman filter by using methods for the type <code>Kalman</code></p><ul><li>Instance data consists of:  <ul><li>The parameters $ A, G, Q, R $ of a given model  </li><li>the moments $ (\hat x<em>t, \Sigma</em>t) $ of the current prior  </li></ul></li><li>The type <code>Kalman</code> from the <a href="http://quantecon.org/julia_index.html">QuantEcon.jl</a> package has a number of methods, some that we will wait to use until we study more advanced applications in subsequent lectures  </li><li>Methods pertinent for this lecture  are:  <ul><li><code>prior_to_filtered</code>, which updates $ (\hat x<em>t, \Sigma</em>t) $ to $ (\hat x<em>t^F, \Sigma</em>t^F) $  </li><li><code>filtered_to_forecast</code>, which updates the filtering distribution to the predictive distribution – which becomes the new prior $ (\hat x<em>{t+1}, \Sigma</em>{t+1}) $  </li><li><code>update</code>, which combines the last two methods  </li><li>a <code>stationary_values</code>, which computes the solution to <a href="#equation-kalman-dare">(9)</a> and the corresponding (stationary) Kalman gain  </li></ul></li></ul><p>You can view the program <a href="https://github.com/QuantEcon/QuantEcon.jl/blob/master/src/kalman.jl">on GitHub</a> &lt;!– #endregion –&gt;</p><p>&lt;!– #region –&gt;</p><h2><a class="nav-anchor" id="Exercises-1" href="#Exercises-1">Exercises</a></h2><p>&lt;a id=&#39;kalman-ex1&#39;&gt;&lt;/a&gt; &lt;!– #endregion –&gt;</p><p>&lt;!– #region –&gt;</p><h3><a class="nav-anchor" id="Exercise-1-1" href="#Exercise-1-1">Exercise 1</a></h3><p>Consider the following simple application of the Kalman filter, loosely based on <a href="https://lectures.quantecon.org/jl/zreferences.html#ljungqvist2012">[LS18]</a>, section 2.9.2</p><p>Suppose that</p><ul><li>all variables are scalars  </li><li>the hidden state $ {x_t} $ is in fact constant, equal to some $ \theta \in \mathbb{R} $ unknown to the modeler  </li></ul><p>State dynamics are therefore given by <a href="#equation-kl-xdynam">(5)</a> with $ A=1 $, $ Q=0 $ and $ x_0 = \theta $</p><p>The measurement equation is $ y<em>t = \theta + v</em>t $ where $ v_t $ is $ N(0,1) $ and iid</p><p>The task of this exercise to simulate the model and, using the code from <code>kalman.jl</code>, plot the first five predictive densities $ p<em>t(x) = N(\hat x</em>t, \Sigma_t) $</p><p>As shown in <a href="https://lectures.quantecon.org/jl/zreferences.html#ljungqvist2012">[LS18]</a>, sections 2.9.1–2.9.2, these distributions asymptotically put all mass on the unknown value $ \theta $</p><p>In the simulation, take $ \theta = 10 $, $ \hat x<em>0 = 8 $ and $ \Sigma</em>0 = 1 $</p><p>Your figure should – modulo randomness – look something like this</p><p>&lt;img src=&quot;https://s3-ap-southeast-2.amazonaws.com/lectures.quantecon.org/jl/<em>static/figures/kl</em>ex1_fig.png&quot; style=&quot;width:100%;height:100%&quot;&gt;</p><p>&lt;a id=&#39;kalman-ex2&#39;&gt;&lt;/a&gt; &lt;!– #endregion –&gt;</p><p>&lt;!– #region –&gt;</p><h3><a class="nav-anchor" id="Exercise-2-1" href="#Exercise-2-1">Exercise 2</a></h3><p>The preceding figure gives some support to the idea that probability mass converges to $ \theta $</p><p>To get a better idea, choose a small $ \epsilon &gt; 0 $ and calculate</p>$<p>z<em>t := 1 - \int</em>{\theta - \epsilon}^{\theta + \epsilon} p_t(x) dx $</p><p>for $ t = 0, 1, 2, \ldots, T $</p><p>Plot $ z_t $ against $ T $, setting $ \epsilon = 0.1 $ and $ T = 600 $</p><p>Your figure should show error erratically declining something like this</p><p>&lt;img src=&quot;https://s3-ap-southeast-2.amazonaws.com/lectures.quantecon.org/jl/<em>static/figures/kl</em>ex2_fig.png&quot; style=&quot;width:100%;height:100%&quot;&gt;</p><p>&lt;a id=&#39;kalman-ex3&#39;&gt;&lt;/a&gt; &lt;!– #endregion –&gt;</p><p>&lt;!– #region –&gt;</p><h3><a class="nav-anchor" id="Exercise-3-1" href="#Exercise-3-1">Exercise 3</a></h3><p>As discussed <a href="#kalman-convergence">above</a>, if the shock sequence $ {w<em>t} $ is not degenerate, then it is not in general possible to predict $ x</em>t $ without error at time $ t-1 $ (and this would be the case even if we could observe $ x_{t-1} $)</p><p>Let’s now compare the prediction $ \hat x<em>t $ made by the Kalman filter against a competitor who <strong>is</strong> allowed to observe $ x</em>{t-1} $</p><p>This competitor will use the conditional expectation $ \mathbb E[ x<em>t \,|\, x</em>{t-1}] $, which in this case is $ A x_{t-1} $</p><p>The conditional expectation is known to be the optimal prediction method in terms of minimizing mean squared error</p><p>(More precisely, the minimizer of $ \mathbb E \, \| x<em>t - g(x</em>{t-1}) \|^2 $ with respect to $ g $ is $ g^*(x<em>{t-1}) := \mathbb E[ x</em>t \,|\, x_{t-1}] $)</p><p>Thus we are comparing the Kalman filter against a competitor who has more information (in the sense of being able to observe the latent state) and behaves optimally in terms of minimizing squared error</p><p>Our horse race will be assessed in terms of squared error</p><p>In particular, your task is to generate a graph plotting observations of both $ \| x<em>t - A x</em>{t-1} \|^2 $ and $ \| x<em>t - \hat x</em>t \|^2 $ against $ t $ for $ t = 1, \ldots, 50 $</p><p>For the parameters, set $ G = I, R = 0.5 I $ and $ Q = 0.3 I $, where $ I $ is the $ 2 \times 2 $ identity</p><p>Set</p>$<p>A = \left( \begin{array}{cc}     0.5 &amp; 0.4 \
+    0.6 &amp; 0.3 \end{array}   \right) $</p><p>To initialize the prior density, set</p>$<p>\Sigma_0 = \left( \begin{array}{cc}     0.9 &amp; 0.3 \
+    0.3 &amp; 0.9 \end{array}   \right) $</p><p>and $ \hat x_0 = (8, 8) $</p><p>Finally, set $ x_0 = (0, 0) $</p><p>You should end up with a figure similar to the following (modulo randomness)</p><p>&lt;img src=&quot;https://s3-ap-southeast-2.amazonaws.com/lectures.quantecon.org/jl/<em>static/figures/kalman</em>ex3.png&quot; style=&quot;width:100%;height:100%&quot;&gt;</p><p>Observe how, after an initial learning period, the Kalman filter performs quite well, even relative to the competitor who predicts optimally with knowledge of the latent state</p><p>&lt;a id=&#39;kalman-ex4&#39;&gt;&lt;/a&gt; &lt;!– #endregion –&gt;</p><h3><a class="nav-anchor" id="Exercise-4-1" href="#Exercise-4-1">Exercise 4</a></h3><p>Try varying the coefficient $ 0.3 $ in $ Q = 0.3 I $ up and down</p><p>Observe how the diagonal values in the stationary solution $ \Sigma $ (see <a href="#equation-kalman-dare">(9)</a>) increase and decrease in line with this coefficient</p><p>The interpretation is that more randomness in the law of motion for $ x_t $ causes more (permanent) uncertainty in prediction</p><h2><a class="nav-anchor" id="Solutions-1" href="#Solutions-1">Solutions</a></h2><pre><code class="language-julia">using QuantEcon</code></pre><h3><a class="nav-anchor" id="Exercise-1-2" href="#Exercise-1-2">Exercise 1</a></h3><pre><code class="language-julia"># parameters
+θ = 10
+A, G, Q, R = 1.0, 1.0, 0.0, 1.0
+x̂_0, Σ_0 = 8.0, 1.0
+
+# initialize Kalman filter
+kalman = Kalman(A, G, Q, R)
+set_state!(kalman, x̂_0, Σ_0)
+
+xgrid = range(θ - 5, θ + 2, length = 200)
+densities = zeros(200, 5) # one column per round of updating
+for i in 1:5
+    # record the current predicted mean and variance, and plot their densities
+    m, v = kalman.cur_x_hat, kalman.cur_sigma
+    densities[:, i] = pdf.(Normal(m, sqrt(v)), xgrid)
+
+    # generate the noisy signal
+    y = θ + randn()
+
+    # update the Kalman filter
+    update!(kalman, y)
+end
+
+labels = [&quot;t=1&quot;, &quot;t=2&quot;, &quot;t=3&quot;, &quot;t=4&quot;, &quot;t=5&quot;]
+plot(xgrid, densities, label = labels, legend = :topleft, grid = false,
+     title = &quot;First 5 densities when theta = $θ&quot;)</code></pre><h3><a class="nav-anchor" id="Exercise-2-2" href="#Exercise-2-2">Exercise 2</a></h3><pre><code class="language-julia">using Random, Expectations
+Random.seed!(42)  # reproducible results
+ϵ = 0.1
+kalman = Kalman(A, G, Q, R)
+set_state!(kalman, x̂_0, Σ_0)
+
+nodes, weights = qnwlege(21, θ-ϵ, θ+ϵ)
+
+T = 600
+z = zeros(T)
+for t in 1:T
+    # record the current predicted mean and variance, and plot their densities
+    m, v = kalman.cur_x_hat, kalman.cur_sigma
+    dist = Normal(m, sqrt(v))
+    E = expectation(dist, nodes)
+    integral = E(x -&gt; 1) # just take the pdf integral
+    z[t] = 1. - integral
+# generate the noisy signal and update the Kalman filter
+update!(kalman, θ + randn())
+end
+
+plot(1:T, z, fillrange = 0, color = :blue, fillalpha = 0.2, grid = false,xlims=(0, T),
+     legend = false)</code></pre><h3><a class="nav-anchor" id="Exercise-3-2" href="#Exercise-3-2">Exercise 3</a></h3><pre><code class="language-julia"># define A, Q, G, R
+G = I + zeros(2, 2)
+R = 0.5 .* G
+A = [0.5 0.4
+        0.6 0.3]
+Q = 0.3 .* G
+
+# define the prior density
+Σ = [0.9 0.3
+        0.3 0.9]
+x̂ = [8, 8]
+
+# initialize the Kalman filter
+kn = Kalman(A, G, Q, R)
+set_state!(kn, x̂, Σ)
+
+# set the true initial value of the state
+x = zeros(2)
+
+# print eigenvalues of A
+println(&quot;Eigenvalues of A:\n$(eigvals(A))&quot;)
+
+# print stationary Σ
+S, K = stationary_values(kn)
+println(&quot;Stationary prediction error variance:\n$S&quot;)
+
+# generate the plot
+T = 50
+e1 = zeros(T)
+e2 = similar(e1)
+for t in 1:T
+
+    # generate signal and update prediction
+    dist = MultivariateNormal(G * x, R)
+    y = rand(dist)
+    update!(kn, y)
+
+    # update state and record error
+    Ax = A * x
+    x = rand(MultivariateNormal(Ax, Q))
+    e1[t] = sum((a - b)^2 for (a, b) in zip(x, kn.cur_x_hat))
+    e2[t] = sum((a - b)^2 for (a, b) in zip(x, Ax))
+end
+
+plot(1:T, e1, color = :black, linewidth = 2, alpha = 0.6, label = &quot;Kalman filter error&quot;,
+     grid = false)
+plot!(1:T, e2, color = :green, linewidth = 2, alpha = 0.6,
+      label = &quot;conditional expectation error&quot;)</code></pre><p><strong>Footnotes</strong></p><p>&lt;p&gt;&lt;a id=f1 href=#f1-link&gt;&lt;strong&gt;[1]&lt;/strong&gt;&lt;/a&gt; See, for example, page 93 of <a href="https://lectures.quantecon.org/jl/zreferences.html#bishop2006">[Bis06]</a>. To get from his expressions to the ones used above, you will also need to apply the <a href="https://en.wikipedia.org/wiki/Woodbury_matrix_identity">Woodbury matrix identity</a>.</p><pre><code class="language-julia">println(&quot;\U1F680&quot;)</code></pre><pre><code class="language-julia"></code></pre><pre><code class="language-julia"></code></pre><footer><hr/></footer></article></body></html>
