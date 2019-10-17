@@ -1,4 +1,4 @@
-import DifferentialEquations: ODEProblem, MonteCarloProblem, solve, Tsit5
+using DifferentialEquations
 
 """ 
     Apply the dynamical models to generate numerical forecasts. 
@@ -20,7 +20,7 @@ function ( ssm :: StateSpaceModel )( x :: Array{Float64, 2})
 
     monte_prob = MonteCarloProblem(prob, prob_func=prob_func)
 
-    sim = solve(monte_prob, Tsit5(), num_monte=np, save_everystep=false)
+    sim = solve(monte_prob, Tsit5(), trajectories=np, save_everystep=false)
 
     sol = [last(sim[i].u) for i in 1:np]
 
