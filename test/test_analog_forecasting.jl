@@ -3,6 +3,9 @@
 import NPSMC: normalise!, sample_discrete
 import DifferentialEquations: ODEProblem, solve
 
+using Random
+Random.seed!(0)
+
 n = 10
 M = rand(n,3)
 
