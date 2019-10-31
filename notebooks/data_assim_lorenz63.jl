@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import Pkg; Pkg.add("DataAssim")
+
 using DataAssim, Plots, Random, LinearAlgebra, Statistics
 using DifferentialEquations
 
@@ -39,13 +41,22 @@ prob  = ODEProblem(lorenz63, x0, tspan, p)
 xit   = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 # +
+n = 3
+H = [1 0 0];
+Q = Matrix(I,n,n)
+nmax = 20;
+no = 5:nmax;
+Pi = Matrix(3*I,n,n)
+
 # true run
-xt,yt = FreeRun(ℳ,xit,Q,H,nmax,no);
+xt,yt = FreeRun(ℳ, xit, Q, H, nmax, no);
 
 # add perturbations to IC
 xi = xit + cholesky(Pi).U * randn(n)
 
 # add perturbations to obs
+m = 1
+R = Matrix(I,m, m)
 yo = zeros(m,length(no))
 for i in 1:length(no)
   yo[:,i] = yt[:,i] .+ cholesky(R).U * randn(m,1)
@@ -54,7 +65,7 @@ end
 xfree, yfree = FreeRun(ℳ, xi, Q, H, nmax, no)
 
 # assimilation
-xa,Pa = KalmanFilter(xi, Pi, ℳ, Q, yo, R, H, nmax, no)
+xa, Pa = KalmanFilter(xi, Pi, ℳ, Q, yo, R, H, nmax, no)
 
 rmse = sqrt(mean(((xt .- xa)).^2)) 
 println( "rmse = $rmse")
