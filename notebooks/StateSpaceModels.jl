@@ -23,8 +23,8 @@ using StateSpaceModels, LinearAlgebra, Plots
 nt = 100
 t = LinRange(0.0, 6π, nt)
 y = zeros(Float64, (nt,2))
-y[:,1] .= sin.(t) + 0.1*randn(77)
-y[:,2] .= cos.(t) + 0.1*randn(77)
+y[:,1] .= sin.(t) + 0.1*randn(nt)
+y[:,2] .= cos.(t) + 0.1*randn(nt)
 y[4:4:96,:] .= NaN
 model = linear_trend(y)
 
