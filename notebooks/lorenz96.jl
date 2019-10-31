@@ -7,12 +7,17 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.4'
-#       jupytext_version: 1.1.6
+#       jupytext_version: 1.2.4
 #   kernelspec:
-#     display_name: Julia 1.1.1
+#     display_name: Julia 1.2.0
 #     language: julia
-#     name: julia-1.1
+#     name: julia-1.2
 # ---
+
+using Distributed
+addprocs(4)
+@everywhere using DifferentialEquations
+
 
 # + {"nbpresent": {"id": "76428090-b279-4d85-b5bc-e0fdefafc294"}, "cell_type": "markdown"}
 # # PROBLEM STATEMENT
@@ -33,7 +38,7 @@
 # Here, we import the different Julia packages. In order to use the analog methog (or nearest neighboor search), we need to install the ["NPSMC" library](https://github.com/npsmc/NPSMC.jl).
 
 # + {"nbpresent": {"id": "f975dd20-65cf-43f8-8a6e-96f2acbad4e4"}}
-using Plots, DifferentialEquations
+using Plots
 # -
 
 include("../src/models.jl")
@@ -44,6 +49,11 @@ include("../src/plot.jl")
 include("../src/generate_data.jl")
 include("../src/utils.jl")
 include("../src/model_forecasting.jl")
+include("../src/analog_forecasting.jl")
+include("../src/data_assimilation.jl")
+include("../src/ensemble_kalman_filters.jl")
+include("../src/ensemble_kalman_smoothers.jl")
+include("../src/particle_filters.jl")
 
 
 # + {"nbpresent": {"id": "c4e459e9-33bc-43f1-91e8-5a5d05746979"}, "cell_type": "markdown"}
@@ -53,14 +63,14 @@ include("../src/model_forecasting.jl")
 
 # +
 using Random
-
+rng = MersenneTwister(1234)
 F = 8
 J = 40 :: Int64
 parameters = [F, J]
 dt_integration = 0.05 # integration time
 dt_states = 1 # number of integration times between consecutive states (for xt and catalog)
 dt_obs = 4 # number of integration times between consecutive observations (for yo)
-var_obs = randperm(MersenneTwister(1234), J)[1:20] # indices of the observed variables
+var_obs = randperm(rng, J)[1:20] # indices of the observed variables
 nb_loop_train = 100 # size of the catalog
 nb_loop_test = 10 # size of the true state and noisy observations
 sigma2_catalog = 0.   # variance of the model error to generate the catalog   
@@ -74,7 +84,6 @@ ssm = StateSpaceModel( lorenz96,
 # -
 
 # 5 time steps (to be in the attractor space)
-# Checks if the inegration function is well implemented.
 
 # +
 u0 = F .* ones(Float64, J)
@@ -108,13 +117,9 @@ title!("Lorenz-96 true (continuous lines) and observed trajectories (dots)")
 
 # ### MODEL DATA ASSIMILATION (with the global analogs)
 
-include("../src/analog_forecasting.jl")
-include("../src/data_assimilation.jl")
-include("../src/ensemble_kalman_filters.jl")
-include("../src/ensemble_kalman_smoothers.jl")
-include("../src/particle_filters.jl")
 data_assimilation = DataAssimilation( ssm, xt )
-@time x̂_classical_global  = data_assimilation(yo, EnKS(500))
+@time x̂_classical_global  = data_assimilation(yo, EnKS(500));
+
 RMSE(xt, x̂_classical_global)
 
 # + {"nbpresent": {"id": "604a659e-82bf-4618-95bf-77ef755b9088"}}
@@ -138,21 +143,17 @@ heatmap(local_analog_matrix)
 
 # ### ANALOG DATA ASSIMILATION (with the global analogs)
 
-include("../src/analog_forecasting.jl")
-include("../src/data_assimilation.jl")
-include("../src/ensemble_kalman_filters.jl")
-include("../src/ensemble_kalman_smoothers.jl")
-include("../src/particle_filters.jl")
-
 f  = AnalogForecasting( 100, xt, catalog, 
     regression = :local_linear, sampling = :gaussian)
 data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
 @time x̂_analog_global  = data_assimilation(yo, EnKS(500))
 RMSE(xt, x̂_analog_global)
 
-# + {"nbpresent": {"id": "02cf2959-e712-4af8-8bb6-f914608e15ac"}}
-### ANALOG DATA ASSIMILATION (with the local analogs)
+# + {"nbpresent": {"id": "02cf2959-e712-4af8-8bb6-f914608e15ac"}, "cell_type": "markdown"}
+# ### ANALOG DATA ASSIMILATION (with the local analogs)
 
+# + {"nbpresent": {"id": "02cf2959-e712-4af8-8bb6-f914608e15ac"}}
+include("../src/analog_forecasting.jl")
 neighborhood = local_analog_matrix
 regression = :local_linear
 sampling   = :gaussian
@@ -161,8 +162,10 @@ data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
 @time x̂_analog_local  = data_assimilation(yo, EnKS(500))
 RMSE(xt, x̂_analog_local)
 
+# + {"nbpresent": {"id": "35f54171-6e87-4b0f-9cb2-821d9c0d8b96"}, "cell_type": "markdown"}
+# ### COMPARISON BETWEEN GLOBAL AND LOCAL ANALOG DATA ASSIMILATION
+
 # + {"nbpresent": {"id": "35f54171-6e87-4b0f-9cb2-821d9c0d8b96"}}
-### COMPARISON BETWEEN GLOBAL AND LOCAL ANALOG DATA ASSIMILATION
 import PyPlot
 fig = PyPlot.figure(figsize=(10,10))
 # plot
@@ -183,8 +186,10 @@ PyPlot.pcolormesh(hcat(x̂_analog_local.u...))
 PyPlot.ylabel("Lorenz-96 times")
 PyPlot.title("Local analog data assimilation")
 
+# + {"nbpresent": {"id": "35f54171-6e87-4b0f-9cb2-821d9c0d8b96"}, "cell_type": "markdown"}
+# # error
+
 # + {"nbpresent": {"id": "35f54171-6e87-4b0f-9cb2-821d9c0d8b96"}}
-# error
 print("RMSE(global analog DA) = $(RMSE(xt,x̂_analog_global))")
 print("RMSE(local analog DA)  = $(RMSE(xt,x̂_analog_local))")
 
