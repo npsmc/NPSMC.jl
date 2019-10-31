@@ -18,7 +18,7 @@ function ( ssm :: StateSpaceModel )( x :: Array{Float64, 2})
         prob
     end
 
-    monte_prob = MonteCarloProblem(prob, prob_func=prob_func)
+    monte_prob = EnsembleProblem(prob, prob_func=prob_func)
 
     sim = solve(monte_prob, Tsit5(), trajectories=np, save_everystep=false)
 
