@@ -132,7 +132,7 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
                 Cxx  = (Xr .* w') * Xr'
                 Cxx2 = Symmetric((Xr .* w'.^2) * Xr')
                 Cxy  = (Y  .* w') * Xr'
-                inv_Cxx = pinv(Cxx, rtol=0.01) # in case of error here, increase the number 
+                inv_Cxx = pinv(Cxx, rtol=0.001) # in case of error here, increase the number 
                                    # of analogs (k option)
                 # regression on principal components
                 beta = Cxy * inv_Cxx 
