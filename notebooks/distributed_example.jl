@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 using Distributed
 using Plots
 
-addprocs(8)
+addprocs(4)
 
+# +
 @everywhere begin
 
     using LinearAlgebra
@@ -20,6 +22,7 @@ addprocs(8)
     t = 10000
 
 end
+# -
 
 βs = [1, 2, 4, 10, 20]
 
@@ -43,3 +46,5 @@ end
 plot(p1, p2, layout=(2, 1), size=(700, 700)) |> display
 
 rmprocs(deleteat!(procs(), 1))
+
+
