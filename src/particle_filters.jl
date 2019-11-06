@@ -110,7 +110,7 @@ function ( da :: DataAssimilation )( yo :: TimeSeries, mc :: PF )
         else
             # stock results
             part[k] .= xf
-            x̂.u[k]    .= vec(sum(xf .* weights', dims=2))
+            x̂.u[k]  .= vec(sum(xf .* weights', dims=2))
         end
 
     end
