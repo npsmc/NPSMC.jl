@@ -44,7 +44,7 @@ xit   = last(solve(prob, reltol=1e-6, save_everystep=false))
 n = 3
 H = [1 0 0];
 Q = Matrix(I,n,n)
-nmax = 20;
+nmax = 1000;
 no = 5:nmax;
 Pi = Matrix(3*I,n,n)
 
