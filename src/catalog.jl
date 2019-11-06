@@ -1,6 +1,12 @@
 export Catalog
 
-mutable struct Catalog
+"""
+    Catalog( data, ssm)
+
+Data type to store analogs and succesors observations
+from the Space State model
+"""
+struct Catalog
 
    nt         :: Int64
    nv         :: Int64
