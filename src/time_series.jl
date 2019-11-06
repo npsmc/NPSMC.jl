@@ -2,8 +2,7 @@ abstract type AbstractTimeSeries end
 
 export TimeSeries
 
-
-mutable struct TimeSeries <:  AbstractTimeSeries
+struct TimeSeries <:  AbstractTimeSeries
 
    nt  :: Integer
    nv  :: Integer
