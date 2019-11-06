@@ -120,22 +120,24 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
                 Y .= forecasting.catalog.successors[ ivar, index_knn[ip]]
                 w .= weights[ip]
                 # compute centered weighted mean and weighted covariance
-                Xm   = vec(sum(X .* w', dims=2))
+                Xm   = sum(X .* w', dims=2)
                 Xc   = X .- Xm
-                # use SVD decomposition to compute principal components
-                F    = svd(Xc')
-                # keep eigen values higher than 1%
-                ind  = findall(F.S ./ sum(F.S) .> 0.01) 
-                Xr   = vcat( ones(forecasting.k)', F.Vt[ind,:] * Xc)
-                Cxx  = Symmetric((Xr .* w') * Xr')
+                #PN # use SVD decomposition to compute principal components
+                #PN F    = svd(Xc')
+                #PN # keep eigen values higher than 1%
+                #PN ind  = findall(F.S ./ sum(F.S) .> 0.01) 
+                #PN Xr   = vcat( ones(forecasting.k)', F.Vt[ind,:] * Xc)
+                
+                Xr   = vcat( ones(forecasting.k)', Xc)
+                Cxx  = (Xr .* w') * Xr'
                 Cxx2 = Symmetric((Xr .* w'.^2) * Xr')
                 Cxy  = (Y  .* w') * Xr'
-                inv_Cxx = inv(Cxx) # in case of error here, increase the number 
+                inv_Cxx = pinv(Cxx, rtol=0.01) # in case of error here, increase the number 
                                    # of analogs (k option)
                 # regression on principal components
                 beta = Cxy * inv_Cxx 
                 X0   = x[ivar_neighboor,ip] .- Xm
-                X0r  = vcat([1], F.Vt[ind,:] * X0 )
+                X0r  = vcat([1], X0 )
                 # weighted mean
                 xf_mean[ivar,ip] = beta * X0r
                 pred             = beta * Xr 
