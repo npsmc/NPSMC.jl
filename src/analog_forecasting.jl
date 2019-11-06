@@ -122,18 +122,11 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
                 # compute centered weighted mean and weighted covariance
                 Xm   = sum(X .* w', dims=2)
                 Xc   = X .- Xm
-                #PN # use SVD decomposition to compute principal components
-                #PN F    = svd(Xc')
-                #PN # keep eigen values higher than 1%
-                #PN ind  = findall(F.S ./ sum(F.S) .> 0.01) 
-                #PN Xr   = vcat( ones(forecasting.k)', F.Vt[ind,:] * Xc)
-                
                 Xr   = vcat( ones(forecasting.k)', Xc)
                 Cxx  = (Xr .* w') * Xr'
                 Cxx2 = Symmetric((Xr .* w'.^2) * Xr')
                 Cxy  = (Y  .* w') * Xr'
-                inv_Cxx = pinv(Cxx, rtol=0.001) # in case of error here, increase the number 
-                                   # of analogs (k option)
+                inv_Cxx = pinv(Cxx, rtol=0.001) 
                 # regression on principal components
                 beta = Cxy * inv_Cxx 
                 X0   = x[ivar_neighboor,ip] .- Xm
@@ -145,18 +138,7 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
                 xf_tmp[ivar,:]  .= xf_mean[ivar,ip] .+ res
                 # weigthed covariance
                 cov_xfc = Symmetric((res * (w .* res'))/(1 .- tr(Cxx2 * inv_Cxx)))
-                cov_xf  = Symmetric(cov_xfc .* (1 + tr(Cxx2 * inv_Cxx * X0r * X0r' * inv_Cxx)))
-                if  isposdef(cov_xf)
-                   cov_xf  = PDMat(cov_xfc)
-                else
-                   # compute the analog forecasts
-                   xf_tmp[ivar,:] .= forecasting.catalog.successors[ivar, index_knn[ip]]
-                   # weighted mean and covariance
-                   xf_mean[ivar,ip] = sum(xf_tmp[ivar,:] .* weights[ip]',dims=2)
-                   Exf   = xf_tmp[ivar,:] .- xf_mean[ivar,ip]
-                   cov_xf = PDMat(1.0 ./(1.0 .- sum(weights[ip].^2))
-                                   .* (Exf .* weights[ip]') * Exf')
-                end
+                cov_xf  = Symmetric(cov_xfc .* (1 .+ tr(Cxx2 * inv_Cxx * X0r * X0r' * inv_Cxx)))
                 # constant weights for local linear
                 weights[ip] .= 1.0/length(weights[ip])
 
