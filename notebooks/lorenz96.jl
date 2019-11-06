@@ -14,9 +14,6 @@
 #     name: julia-1.2
 # ---
 
-using DifferentialEquations
-
-
 # + {"nbpresent": {"id": "76428090-b279-4d85-b5bc-e0fdefafc294"}, "cell_type": "markdown"}
 # # Problem
 #
@@ -36,23 +33,7 @@ using DifferentialEquations
 # Here, we import the different Julia packages. In order to use the analog methog (or nearest neighboor search), we need to install the ["NPSMC" library](https://github.com/npsmc/NPSMC.jl).
 
 # + {"nbpresent": {"id": "f975dd20-65cf-43f8-8a6e-96f2acbad4e4"}}
-using Plots
-# -
-
-include("../src/models.jl")
-include("../src/time_series.jl")
-include("../src/state_space.jl")
-include("../src/catalog.jl")
-include("../src/plot.jl")
-include("../src/generate_data.jl")
-include("../src/utils.jl")
-include("../src/model_forecasting.jl")
-include("../src/analog_forecasting.jl")
-include("../src/data_assimilation.jl")
-include("../src/ensemble_kalman_filters.jl")
-include("../src/ensemble_kalman_smoothers.jl")
-include("../src/particle_filters.jl")
-
+using Plots, NPSMC, DifferentialEquations, Random, LinearAlgebra
 
 # + {"nbpresent": {"id": "c4e459e9-33bc-43f1-91e8-5a5d05746979"}, "cell_type": "markdown"}
 # # TEST ON LORENZ-96
@@ -60,7 +41,6 @@ include("../src/particle_filters.jl")
 # We also test the analog data assimilation procedure on the 40-dimensional Lorenz-96 dynamical model. As in the previous experiment, we generate state and observation data as well as simulated trajectories of the Lorenz-96 model in order to emulate the dynamical model. Here, we compare two analog data assimilation strategies: the global and local analog forecasting, respectively defined in finding similar situations on the whole 40 variables or on 5 variables recursively.
 
 # +
-using Random
 rng = MersenneTwister(1234)
 F = 8
 J = 40 :: Int64
@@ -151,7 +131,6 @@ RMSE(xt, x̂_analog_global)
 # ### ANALOG DATA ASSIMILATION (with the local analogs)
 
 # + {"nbpresent": {"id": "02cf2959-e712-4af8-8bb6-f914608e15ac"}}
-include("../src/analog_forecasting.jl")
 neighborhood = local_analog_matrix
 regression = :local_linear
 sampling   = :gaussian
