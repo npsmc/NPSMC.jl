@@ -54,7 +54,7 @@ for regression in [:locally_constant, :increment, :local_linear]
             x̂  = data_assimilation(yo, method)
             rmse = RMSE(xt, x̂) 
             println( " rmse = $rmse ")
-            @test rmse < 2.0
+            @test rmse < 3.0
         end
     end
 end
