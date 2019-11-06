@@ -14,26 +14,24 @@
 #     name: julia-1.2
 # ---
 
-using Distributed
-addprocs(4)
-@everywhere using DifferentialEquations
+using DifferentialEquations
 
 
 # + {"nbpresent": {"id": "76428090-b279-4d85-b5bc-e0fdefafc294"}, "cell_type": "markdown"}
-# # PROBLEM STATEMENT
+# # Problem
 #
 # Data assimilation are numerical methods used in geosciences to mix the information of observations (noted as $y$) and a dynamical model (noted as $f$) in order to estimate the true/hidden state of the system (noted as $x$) at every time step $k$. Usually, they are related following a nonlinear state-space model:
 # <img src=https://tandeo.files.wordpress.com/2019/02/formule_nnss_model.png width="200">
 # with $\eta$ and $\epsilon$ some independant white Gaussian noises respectively respresenting the model forecast error and the error of observation.
 #
-# In classical data assimilation, we require multiple runs of an explicit dynamical model $f$ with possible severe limitations including the computational cost, the lack of consistency of the model with respect to the observed data as well as modeling uncertainties. Here, an alternative strategy is explored by developing a fully data-driven assimilation. No explicit knowledge of the dynamical model is required. Only a representative catalog of trajectories of the system is assumed to be available. Based on this catalog, the Analog Data Assimilation (AnDA) is introduced by combining machine learning with the analog method (or nearest neighbor search) and stochastic assimilation techniques including Ensemble Kalman Filter and Smoother (EnKF, EnKS) and Particle Filter (PF). We test the accuracy of the technic on different chaotic dynamical models, the Lorenz-63 and Lorenz-96 systems.
+# In classical data assimilation, we require multiple runs of an explicit dynamical model $f$ with possible severe limitations including the computational cost, the lack of consistency of the model with respect to the observed data as well as modeling uncertainties. Here, an alternative strategy is explored by developing a fully data-driven assimilation. No explicit knowledge of the dynamical model is required. Only a representative catalog of trajectories of the system is assumed to be available. Based on this catalog, the Analog Data Assimilation (AnDA) is introduced by combining machine learning with the analog method (or nearest neighbor search) and stochastic assimilation techniques including Ensemble Kalman Filter and Smoother (EnKF, EnKS) and Particle Filter (PF). We test the accuracy of the technic on chaotic dynamical models, the Lorenz-96 system.
 #
 # This Julia program is dervied from the Python library is attached to the following publication:
 # Lguensat, R., Tandeo, P., Ailliot, P., Pulido, M., & Fablet, R. (2017). The Analog Data Assimilation. *Monthly Weather Review*, 145(10), 4093-4107.
 # If you use this library, please do not forget to cite this work.
 
 # + {"nbpresent": {"id": "af657441-0912-4749-b537-6e1734f875bb"}, "cell_type": "markdown"}
-# # USING PACKAGES
+# # NPSMC.jl package
 #
 # Here, we import the different Julia packages. In order to use the analog methog (or nearest neighboor search), we need to install the ["NPSMC" library](https://github.com/npsmc/NPSMC.jl).
 
@@ -123,7 +121,7 @@ data_assimilation = DataAssimilation( ssm, xt )
 RMSE(xt, x̂_classical_global)
 
 # + {"nbpresent": {"id": "604a659e-82bf-4618-95bf-77ef755b9088"}}
-local_analog_matrix = BitArray{2}( diagm( -2  => trues(xt.nv-2),
+local_analog_matrix =  BitArray{2}(diagm( -2  => trues(xt.nv-2),
              -1  => trues(xt.nv-1),
               0  => trues(xt.nv),
               1  => trues(xt.nv-1),
@@ -190,8 +188,8 @@ PyPlot.title("Local analog data assimilation")
 # # error
 
 # + {"nbpresent": {"id": "35f54171-6e87-4b0f-9cb2-821d9c0d8b96"}}
-print("RMSE(global analog DA) = $(RMSE(xt,x̂_analog_global))")
-print("RMSE(local analog DA)  = $(RMSE(xt,x̂_analog_local))")
+println("RMSE(global analog DA) = $(RMSE(xt,x̂_analog_global))")
+println("RMSE(local analog DA)  = $(RMSE(xt,x̂_analog_local))")
 
 # + {"nbpresent": {"id": "3c8d57d0-c7b5-4ec6-9ecb-d91aaffbf836"}, "cell_type": "markdown"}
 # The results show that the global analog strategy do not reach satisfying results. Indeed, it is difficult to find relevant nearest neighboors on 40-dimensional vectors. The only way to improve the results in such a global strategy is to deeply increase the size of the catalog. At the contrary, in the local analog data assimilation, we are able to track correctly the true trajectories, even with a short catalog.
@@ -200,3 +198,5 @@ print("RMSE(local analog DA)  = $(RMSE(xt,x̂_analog_local))")
 # # Remark
 #
 # Note that for all the previous experiments, we use the robust Ensemble Kalman Smoother (EnKS) with the increment or local linear regressions and the Gaussian sampling. If you want to have realistic state estimations, we preconize the use of the Particle Filter (DA.method = 'PF') with the locally constant regression (AF.regression = 'locally_constant') and the multinomial sampler (AF.sampling = 'multinomial') with a large number of particles (DA.N). For more details about the different options, see the attached publication: Lguensat, R., Tandeo, P., Ailliot, P., Pulido, M., & Fablet, R. (2017). The Analog Data Assimilation. *Monthly Weather Review*, 145(10), 4093-4107.
+# -
+
