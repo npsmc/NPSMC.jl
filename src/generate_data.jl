@@ -6,6 +6,8 @@ import Distributions: MvNormal, rand
 export generate_data
 
 """
+    generate_data( ssm, u0; seed=42)
+
 from StateSpace generate:
  - true state (xt)
  - partial/noisy observations (yo)
@@ -56,7 +58,7 @@ function generate_data( ssm :: StateSpaceModel,
     prob  = ODEProblem(ssm.model, u0, tspan, ssm.params)
     sol   = solve(prob,reltol=1e-6,saveat=ssm.dt_integration)
     n     = length(sol.t)
-    @show size(sol.u)
+    
     if ssm.sigma2_catalog > 0
         μ   = zeros(Float64,nv)
         σ   = ssm.sigma2_catalog .* Matrix(I,nv,nv)
@@ -110,6 +112,11 @@ function generate_data(ssm :: SSM, x0 :: Vector{Float64}, nt :: Int64; seed = 1)
 
 end
     
+"""
+    train_test_split( X, Y; test_size)
+
+Split time series into random train and test subsets
+"""
 function train_test_split( X :: TimeSeries, Y :: TimeSeries; test_size=0.5)
 
     time    = X.t
