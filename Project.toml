@@ -4,6 +4,7 @@ authors = ["Pierre Navaro <pierre.navaro@math.cnrs.fr>"]
 version = "0.1.0"
 
 [deps]
+DataAssim = "cf87cc76-4620-5dad-9f0a-7411b2d39d18"
 DiffEqUncertainty = "ef61062a-5684-51dc-bb67-a0fcdec5c97d"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
