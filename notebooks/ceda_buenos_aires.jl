@@ -52,10 +52,10 @@
 # \end{align}
 # with $\eta(k) \sim \mathcal{N}\left(0,Q^{true}=1\right)$ and $\epsilon(k) \sim \mathcal{N}\left(0,R^{true}=1\right)$. Use the function *random.normal* to generate the Gaussian noises. Then, plot the $x$ and $y$ time series.
 
-using Plots, Random, LinearAlgebra, Distributions, Kalman
+using Plots, Random, LinearAlgebra, Distributions, DataAssim
 
 # +
-Random.seed!(5)
+Random.seed!(42)
 
 # generate true state and noisy observations
 Q_true = 1.0
@@ -70,7 +70,6 @@ for k in 2:K
     y[k] = x_true[k] + rand(dR)
 end
 
-
 # plot results
 plot(x_true,linecolor=:red,linewidth=2, label="True state")
 scatter!(y,linecolor=:black, markersize=2,label="Noisy observations")
@@ -79,6 +78,54 @@ title!("Simulated data from a linear Gaussian state-space model", fontsize=20)
 # -
 
 # Now, we apply the Kalman smoother using the true parameters: $M=0.95$, $H=1$, $Q=Q^{true}$ and $R=R^{true}$. We plot the corresponding results. The estimated state using Kalman is close to the truth and the $95\%$ confidence interval seems realistic.
+
+# +
+n = 1
+gaussian = ModelMatrix(0.95 .* Matrix(I,n,n))
+H = Matrix(I,n,n)
+Q = Matrix(I,n,n)
+nmax = 100;
+no = 5:nmax;
+Pi = Matrix(I,n,n)
+xit = [0.0]
+# true run
+(M::ModelMatrix)(t,x) = M.M*x + cholesky(Q).U * randn(n,1)
+xt, yt = FreeRun(gaussian, xit, Q, H, nmax, no);
+
+# add perturbations to IC
+xi = xit + cholesky(Pi).U * randn(n)
+
+# add perturbations to obs
+m = 1
+R = Matrix(I,m, m)
+yo = zeros(m,length(no))
+for i in 1:length(no)
+  yo[:,i] = yt[:,i] .+ cholesky(R).U * randn(m,1)
+end
+# free run
+xfree, yfree = FreeRun(gaussian, xi, Q, H, nmax, no)
+# assimilation
+xa, Pa = KalmanFilter(xi, Pi, gaussian, Q, yo, R, H, nmax, no);
+# -
+
+size(xa), size(Pa)
+
+plot(vec(xt))
+scatter!(vec(yo); markersize=2)
+plot!(vec(xa), ribbon=[1.96*Pa[1,1,:],1.96*Pa[1,1,:]])
+
+
+
+
+
+
+
+
+
+
+
+
+x,P = KalmanFilter(xi,Pi,ℳ,Q,yo,R,H,nmax,no)
 
 # +
 
