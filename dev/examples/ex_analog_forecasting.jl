@@ -22,23 +22,22 @@ ssm = StateSpaceModel( lorenz63,
                        nb_loop_train, nb_loop_test,
                        sigma2_catalog, sigma2_obs )
 
-# compute u0 to be in the attractor space
+# # compute u0 to be in the attractor space
 
 u0    = [8.0;0.0;30.0]
 tspan = (0.0,5.0)
 prob  = ODEProblem(ssm.model, u0, tspan, ssm.params)
 u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
-xt, yo, catalog = generate_data( ssm, u0 );
-typeof(xt)
-
+xt, yo, catalog = generate_data( ssm, u0 )
 
 af = AnalogForecasting( 50, xt, catalog; 
     regression = :local_linear, sampling = :multinomial )
+
 np = 100
 data_assimilation = DataAssimilation( af, xt, ssm.sigma2_obs)
 x̂ = data_assimilation(yo, EnKS(np));
-RMSE(xt, x̂)
+println(RMSE(xt, x̂))
 
 plot(xt.t, vcat(xt.u'...)[:,1], label=:true)
 plot!(xt.t, vcat(x̂.u'...)[:,1], label=:forecasted)
