@@ -1,30 +1,11 @@
----
-jupyter:
-  jupytext:
-    formats: ipynb,jl:light
-    text_representation:
-      extension: .md
-      format_name: markdown
-      format_version: '1.1'
-      jupytext_version: 1.1.3
-  kernelspec:
-    display_name: Julia 1.1.0
-    language: julia
-    name: julia-1.1
----
+# # Sinus model
 
-```julia
-include("../src/models.jl")
-include("../src/time_series.jl")
-include("../src/state_space.jl")
-include("../src/catalog.jl")
-include("../src/plot.jl")
-include("../src/generate_data.jl")
-```
+using LinearAlgebra
+using NPSMC
+using Plots
 
-### GENERATE SIMULATED DATA (SINUS MODEL)
+# ### Generate simulated data (Sinus Model)
 
-```julia
 # parameters
 dx       = 1                # dimension of the state
 dt_int   = 1.               # fixed integration time
@@ -37,6 +18,7 @@ function h(x) # observation model
     H = Matrix(I,dx,dx) 
     H .* x 
 end
+
 jac_h(x)  = x
 const a = 3. :: Float64
 mx(x)     = sin.(a .* x)
@@ -49,29 +31,12 @@ sig2_R = 0.1
 # prior state
 x0 = [1.]
 
-sinus3   = SSM(h, jac_h, mx, jac_mx, dt_int, dt_model, x0, var_obs, sig2_Q, sig2_R)
-```
+sinus3   = NPSMC.SSM(h, jac_h, mx, jac_mx, dt_int, dt_model, x0, var_obs, sig2_Q, sig2_R)
 
-```julia
 # generate data
 T        = 2000# length of the training
 X, Y     = generate_data( sinus3, x0, T)
-```
 
-```julia
-using Plots
-```
-
-```julia
 values = vcat(X.u'...)
 scatter( values, mx(values))
 scatter!(values[1:end-1], values[2:end], markersize=2)
-```
-
-```julia
-
-```
-
-```julia
-
-```

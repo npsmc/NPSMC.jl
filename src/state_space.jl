@@ -24,6 +24,7 @@ Y_t = H(X_t) + \\varepsilon_t,
 - `dt_states` is the number of `dt_integration` between ``X_{t-1}`` and ``X_t``.
 - `dt_obs` is the number of `dt_integration` between ``Y_{t-1}`` and ``Y_t``.
 
+
 """
 struct StateSpaceModel <: AbstractForecasting
 
@@ -39,6 +40,7 @@ struct StateSpaceModel <: AbstractForecasting
     sigma2_obs     :: Float64
     
 end
+
 
 
 """
