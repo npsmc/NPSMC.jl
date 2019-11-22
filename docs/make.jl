@@ -1,24 +1,41 @@
-using Documenter, NPSMC
+using DelimitedFiles
+using Documenter
+using Literate
+using NPSMC
+using Plots 
 
-#sources = filter(x -> occursin(r".md", x), map(relpath, 
-#                 readdir(joinpath(@__DIR__, "..", "examples"))))
-#examples = String[]
-#for source in sources
-#    @show source
-#    cp( joinpath(@__DIR__, "..",  "examples",  source),
-#        joinpath(@__DIR__, "src", "examples",  source))
-#
-#    push!(examples, joinpath("examples",  source))
-#end
+# generate examples
+OUTPUT = joinpath(@__DIR__, "src", "generated")
+
+pages    = Any["Home" => "index.md",
+               "Models" => "models.md",
+               "Data Assimilation" => "data_assimilation.md",
+               "State Space" => "state_space.md"]
+
+examples = filter(x -> occursin(r".jl", x), map(relpath, readdir(joinpath(@__DIR__, "src", "examples"))))
+
+for example in examples
+
+    @show EXAMPLE = joinpath(@__DIR__, "src", "examples", example)
+    @show page = string("generated/", example[1:end-3],".md")
+
+    open(`head -n1 $EXAMPLE`) do io
+         title = string(readdlm(io)[3:]...)
+         push!(pages, title => page)
+    end
+
+    Literate.markdown(EXAMPLE, OUTPUT)
+    #Literate.notebook(EXAMPLE, OUTPUT)
+    #Literate.script(EXAMPLE, OUTPUT)
+end
 
 makedocs(
     modules   = [NPSMC],
     sitename  = "NPSMC.jl",
-    doctest   = false, 
+    doctest   = true, 
     authors   = "Pierre Navaro",
     format    = Documenter.HTML(),
-    pages     = ["Home" => "index.md",
-                 "Example" => "example.md"]
+    pages     = pages
 )
 
 deploydocs(

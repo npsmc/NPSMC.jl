@@ -2,6 +2,3 @@
 
 Documentation for NPSMC.jl
 
-```@autodocs
-Modules = [NPSMC]
-```
