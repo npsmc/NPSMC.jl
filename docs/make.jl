@@ -20,7 +20,7 @@ for example in examples
     @show page = string("generated/", example[1:end-3],".md")
 
     open(`head -n1 $EXAMPLE`) do io
-         title = string(readdlm(io)[3:]...)
+         title = join(readdlm(io)[3:end], " ")
          push!(pages, title => page)
     end
 
