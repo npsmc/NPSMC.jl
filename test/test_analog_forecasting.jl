@@ -50,9 +50,8 @@ for regression in [:local_linear, :locally_constant, :increment]
         for method in [EnKS(100), EnKF(100), PF(100)]
             println( " $regression, $sampling, $method ")
             data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-            time = @time x̂  = data_assimilation(yo, method)
+            @time x̂  = data_assimilation(yo, method)
             rmse = RMSE(xt, x̂) 
-            println( " elapsed time = $time ")
             println( " rmse = $rmse ")
             @test rmse < 3.0
         end
