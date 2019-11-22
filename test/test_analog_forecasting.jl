@@ -43,7 +43,7 @@ u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 )
 
-for regression in [:locally_constant, :increment, :local_linear]
+for regression in [:local_linear, :locally_constant, :increment]
     for sampling in [:gaussian, :multinomial]
         f  = AnalogForecasting( 50, xt, catalog; 
                                 regression = regression,

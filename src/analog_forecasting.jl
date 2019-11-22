@@ -63,8 +63,8 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
     while condition
 
         if all(forecasting.neighborhood)
-            ivar_neighboor = collect(1:nv)
-            ivar           = collect(1:nv)
+            ivar_neighboor = 1:nv
+            ivar           = 1:nv
             condition      = false
         else
             ivar_neighboor = findall(vec(forecasting.neighborhood[ivar,:]))
@@ -83,9 +83,14 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
         # initialization
         xf_tmp = zeros(Float64, (last(ivar),forecasting.k))
 
-        X = zeros(Float64,(length(ivar_neighboor), forecasting.k))
-        Y = zeros(Float64,(length(ivar), forecasting.k))
-        w = zeros(Float64, forecasting.k)
+        if forecasting.regression == :local_linear
+
+            X = zeros(Float64,(length(ivar_neighboor), forecasting.k))
+            Y = zeros(Float64,(length(ivar), forecasting.k))
+            w = zeros(Float64, forecasting.k)
+
+            local_linear = LocalLinear(forecasting.k, ivar, ivar_neighboor)
+        end
 
         for ip = 1:np
  
@@ -119,26 +124,10 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
                 X .= forecasting.catalog.analogs[ ivar_neighboor , index_knn[ip]]
                 Y .= forecasting.catalog.successors[ ivar, index_knn[ip]]
                 w .= weights[ip]
+
                 # compute centered weighted mean and weighted covariance
-                Xm   = sum(X .* w', dims=2)
-                Xc   = X .- Xm
-                Xr   = vcat( ones(forecasting.k)', Xc)
-                Cxx  = (Xr .* w') * Xr'
-                Cxx2 = Symmetric((Xr .* w'.^2) * Xr')
-                Cxy  = (Y  .* w') * Xr'
-                inv_Cxx = pinv(Cxx, rtol=0.001) 
-                # regression on principal components
-                beta = Cxy * inv_Cxx 
-                X0   = x[ivar_neighboor,ip] .- Xm
-                X0r  = vcat([1], X0 )
-                # weighted mean
-                xf_mean[ivar,ip] = beta * X0r
-                pred             = beta * Xr 
-                res              = Y  .- pred
-                xf_tmp[ivar,:]  .= xf_mean[ivar,ip] .+ res
-                # weigthed covariance
-                cov_xfc = Symmetric((res * (w .* res'))/(1 .- tr(Cxx2 * inv_Cxx)))
-                cov_xf  = Symmetric(cov_xfc .* (1 .+ tr(Cxx2 * inv_Cxx * X0r * X0r' * inv_Cxx)))
+                cov_xf  = compute(local_linear, x, xf_tmp, xf_mean, ip, X, Y, w)
+
                 # constant weights for local linear
                 weights[ip] .= 1.0/length(weights[ip])
 
