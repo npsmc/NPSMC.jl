@@ -6,7 +6,9 @@ Modules = [NPSMC]
 Pages   = ["state_space.jl"]
 ```
 
+
 ```jldoctest
+using NPSMC
 
 σ, ρ, β = 10.0, 28.0, 8.0/3
 
