@@ -1,6 +1,6 @@
 """
 Non Parametric Sequential Monte-Carlo 
-""
+"""
 module NPSMC
 
 include("models.jl")
