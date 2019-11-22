@@ -21,7 +21,7 @@ for example in examples
 
     open(`head -n1 $EXAMPLE`) do io
          title = join(readdlm(io)[3:end], " ")
-         push!(pages, title => page)
+         push!(pages, hide(title => page))
     end
 
     Literate.markdown(EXAMPLE, OUTPUT)
