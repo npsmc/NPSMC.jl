@@ -18,8 +18,8 @@ struct Catalog
    function Catalog( data :: Array{Float64,2}, ssm :: StateSpaceModel)
 
        nv, nt     = size(data)
-       analogs    = @view data[ :, 1:end-ssm.dt_states]
-       successors = @view data[ :, ssm.dt_states+1:end]
+       analogs    = data[ :, 1:end-ssm.dt_states]
+       successors = data[ :, ssm.dt_states+1:end]
 
        new( nt, nv, data, analogs, successors, ssm)
 

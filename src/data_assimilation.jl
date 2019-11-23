@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
+using Distributions
 using LinearAlgebra
 using ProgressMeter
-using Distributions
-
-export DataAssimilation
-export data_assimilation
 
 abstract type MonteCarloMethod end
+
+export DataAssimilation
 
 """
     DataAssimilation( forecasting, method, np, xt, sigma2) 

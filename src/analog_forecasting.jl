@@ -121,8 +121,8 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
             elseif forecasting.regression == :local_linear
 
                 # define analogs, successors and weights
-                X .= forecasting.catalog.analogs[ ivar_neighboor , index_knn[ip]]
-                Y .= forecasting.catalog.successors[ ivar, index_knn[ip]]
+                X .= @view forecasting.catalog.analogs[ ivar_neighboor , index_knn[ip]]
+                Y .= @view forecasting.catalog.successors[ ivar, index_knn[ip]]
                 w .= weights[ip]
 
                 # compute centered weighted mean and weighted covariance

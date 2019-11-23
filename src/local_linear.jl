@@ -60,7 +60,7 @@ function compute( ll :: LocalLinear, x, xf_tmp, xf_mean, ip, X, Y, w )
     ll.X0r .= vcat([1], X0 )
     # weighted mean
     xf_mean[ivar,ip] = beta * ll.X0r
-    ll.pred         .= beta * ll.Xr 
+    mul!(ll.pred, beta, ll.Xr )
     ll.res          .= Y  .- ll.pred
     xf_tmp[ivar,:]  .= xf_mean[ivar,ip] .+ ll.res
     # weigthed covariance
