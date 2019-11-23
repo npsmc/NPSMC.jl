@@ -10,6 +10,7 @@ struct LocalLinear
     Xr   :: Array{Float64, 2}
     Cxx  :: Array{Float64, 2}
     Cxx2 :: Array{Float64, 2}
+    Cxy  :: Array{Float64, 2}
     pred :: Array{Float64, 2}
     X0r  :: Array{Float64, 2}
 
@@ -29,11 +30,12 @@ struct LocalLinear
         Xr   = zeros(Float64, (nvn+1, k))
         Cxx  = zeros(Float64, (nvn+1, nvn+1))
         Cxx2 = zeros(Float64, (nvn+1, nvn+1))
-        pred = zeros(Float64, (nvn, k))
+        Cxy  = zeros(Float64, (nv, nvn))
+        pred = zeros(Float64, (nv, k))
         X0r  = zeros(Float64, (nvn+1, 1))
 
         new(  k, ivar, ivar_neighboor, res, beta, Xm, Xc, Xr,
-              Cxx, Cxx2, pred, X0r)
+              Cxx, Cxx2, Cxy, pred, X0r)
 
     end
 
@@ -45,27 +47,25 @@ function compute( ll :: LocalLinear, x, xf_tmp, xf_mean, ip, X, Y, w )
     ivar = ll.ivar
     ivar_neighboor = ll.ivar_neighboor
 
-    # compute centered weighted mean and weighted covariance
-    ll.Xm   .= sum(X .* w', dims=2)
-    ll.Xc   .= X .- ll.Xm
-    ll.Xr   .= vcat( ones(ll.k)', ll.Xc)
-    ll.Cxx  .= (ll.Xr .* w') * ll.Xr'
-    ll.Cxx2 .= (ll.Xr .* w'.^2) * ll.Xr'
-    Cxy     = (Y  .* w') * ll.Xr'
-    inv_Cxx = pinv(ll.Cxx, rtol=0.01) 
+    ll.Xm  .= sum(X .* w', dims=2)
+    ll.Xr  .= vcat( ones(ll.k)', X)
+    ll.Xr[2:end,:] .-= ll.Xm
+    ll.Cxx .= (ll.Xr .* w') * ll.Xr'
+    Cxx2 = Symmetric((ll.Xr .* w'.^2) * ll.Xr')
+    Cxy  = (Y  .* w') * ll.Xr'
+    inv_Cxx = pinv(ll.Cxx, rtol=0.001) 
     # regression on principal components
     beta = Cxy * inv_Cxx 
-    
     X0   = x[ivar_neighboor,ip] .- ll.Xm
-    ll.X0r .= vcat([1], X0 )
+    X0r  = vcat([1], X0 )
     # weighted mean
-    xf_mean[ivar,ip] = beta * ll.X0r
-    mul!(ll.pred, beta, ll.Xr )
-    ll.res          .= Y  .- ll.pred
-    xf_tmp[ivar,:]  .= xf_mean[ivar,ip] .+ ll.res
+    xf_mean[ivar,ip] = beta * X0r
+    pred             = beta * ll.Xr 
+    res              = Y  .- pred
+    xf_tmp[ivar,:]  .= xf_mean[ivar,ip] .+ res
     # weigthed covariance
-    cov_xfc = Symmetric((ll.res * (w .* ll.res'))/(1 .- tr(ll.Cxx2 * inv_Cxx)))
-    cov_xf  = Symmetric(cov_xfc .* (1 .+ tr(ll.Cxx2 * inv_Cxx * ll.X0r * ll.X0r' * inv_Cxx)))
+    cov_xfc = Symmetric((res * (w .* res'))/(1 .- tr(Cxx2 * inv_Cxx)))
+    cov_xf  = Symmetric(cov_xfc .* (1 .+ tr(Cxx2 * inv_Cxx * X0r * X0r' * inv_Cxx)))
 
     return cov_xf
 
