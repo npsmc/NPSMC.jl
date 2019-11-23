@@ -6,7 +6,6 @@ struct LocalLinear
     res  :: Array{Float64, 2}
     beta :: Array{Float64, 2}
     Xm   :: Array{Float64, 2}
-    Xc   :: Array{Float64, 2}
     Xr   :: Array{Float64, 2}
     Cxx  :: Array{Float64, 2}
     Cxx2 :: Array{Float64, 2}
@@ -26,7 +25,6 @@ struct LocalLinear
         res  = zeros(Float64, (nv, k))
         beta = zeros(Float64, (nv, nvn+1))
         Xm   = zeros(Float64, (nvn, 1))
-        Xc   = zeros(Float64, (nvn, k))
         Xr   = ones(Float64, (nvn+1, k))
         Cxx  = zeros(Float64, (nvn+1, nvn+1))
         Cxx2 = zeros(Float64, (nvn+1, nvn+1))
@@ -34,7 +32,7 @@ struct LocalLinear
         pred = zeros(Float64, (nv, k))
         X0r  = ones(Float64, (nvn+1, 1))
 
-        new(  k, ivar, ivar_neighboor, res, beta, Xm, Xc, Xr,
+        new(  k, ivar, ivar_neighboor, res, beta, Xm, Xr,
               Cxx, Cxx2, Cxy, pred, X0r)
 
     end
@@ -53,6 +51,7 @@ function compute( ll :: LocalLinear, x, xf_tmp, xf_mean, ip, X, Y, w )
     mul!(ll.Cxx2, (ll.Xr .* w'.^2), ll.Xr')
     mul!(ll.Cxy, (Y  .* w'), ll.Xr')
     ll.Cxx .= pinv(ll.Cxx, rtol=0.001) 
+    ll.Cxx2 .= ll.Cxx2 * ll.Cxx
     # regression on principal components
     mul!(ll.beta, ll.Cxy, ll.Cxx) 
     ll.X0r[2:end,:] .= x[ivar_neighboor,ip] .- ll.Xm
@@ -62,8 +61,8 @@ function compute( ll :: LocalLinear, x, xf_tmp, xf_mean, ip, X, Y, w )
     Y  .-= ll.pred
     xf_tmp[ivar,:]  .= xf_mean[ivar,ip] .+ Y
     # weigthed covariance
-    cov_xfc = Symmetric((Y * (w .* Y'))/(1 .- tr(ll.Cxx2 * ll.Cxx)))
-    cov_xf  = Symmetric(cov_xfc .* (1 .+ tr(ll.Cxx2 * ll.Cxx * ll.X0r * ll.X0r' * ll.Cxx)))
+    cov_xf  = (Y * (w .* Y')) ./ (1 .- tr(ll.Cxx2))
+    cov_xf .= Symmetric(cov_xf .* (1 .+ tr(ll.Cxx2 * ll.X0r * ll.X0r' * ll.Cxx)))
 
     return cov_xf
 
