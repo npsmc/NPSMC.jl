@@ -77,18 +77,15 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
         # parameter of normalization for the kernels
         λ = median(Iterators.flatten(dist_knn))
         # compute weights
-        weights = [exp.(-dist.^2 ./ λ) for dist in dist_knn]
-        weights = [w ./ sum(w) for w in weights]
+        weights  = [exp.(-dist.^2 ./ λ) for dist in dist_knn]
+        for (ip,w) in enumerate(weights)
+            weights[ip] .= w ./ sum(w)
+        end
 
         # initialization
         xf_tmp = zeros(Float64, (last(ivar),forecasting.k))
 
         if forecasting.regression == :local_linear
-
-            X = zeros(Float64,(length(ivar_neighboor), forecasting.k))
-            Y = zeros(Float64,(length(ivar), forecasting.k))
-            w = zeros(Float64, forecasting.k)
-
             local_linear = LocalLinear(forecasting.k, ivar, ivar_neighboor)
         end
 
@@ -121,15 +118,15 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
             elseif forecasting.regression == :local_linear
 
                 # define analogs, successors and weights
-                X .= forecasting.catalog.analogs[ ivar_neighboor , index_knn[ip]]
-                Y .= forecasting.catalog.successors[ ivar, index_knn[ip]]
-                w .= weights[ip]
 
                 # compute centered weighted mean and weighted covariance
-                cov_xf  = compute(local_linear, x, xf_tmp, xf_mean, ip, X, Y, w)
+                cov_xf  = compute(local_linear, x, xf_tmp, xf_mean, ip,
+                forecasting.catalog.analogs[ ivar_neighboor , index_knn[ip]],
+                forecasting.catalog.successors[ ivar, index_knn[ip]],
+                weights[ip])
 
                 # constant weights for local linear
-                weights[ip] .= 1.0/length(weights[ip])
+                weights[ip] .= 1.0/ forecasting.k
 
             else
 
