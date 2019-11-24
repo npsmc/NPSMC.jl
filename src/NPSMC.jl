@@ -1,4 +1,6 @@
 """
+    NPSMC
+
 Non Parametric Sequential Monte-Carlo 
 """
 module NPSMC
