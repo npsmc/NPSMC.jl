@@ -6,11 +6,9 @@ export lorenz63, lorenz96, sinus
 
 Lorenz-63 dynamical model 
 ```math
-\\begin{eqnarray}
 u̇₁(t) & = & p₁ ( u₂(t) - u₁(t)) \\\\
 u̇₂(t) & = & u₁ ( p₂ - u₃(t)) - u₂(t) \\\\
 u̇₃(t) & = & u₂(t)u₁(t) - p₃u₃(t)
-\\end{eqnarray}
 ```
 """
 function lorenz63(du, u, p, t)
@@ -38,7 +36,15 @@ end
 """
     lorenz96(S, t, F, J)
 
-Lorenz-96 dynamical model 
+Lorenz-96 dynamical model. For ``i=1,...,N``:
+
+```math
+\\frac{dx_i}{dt} = (x_{i+1}-x_{i-2})x_{i-1} - x_i + F
+```
+
+where it is assumed that ``x_{-1}=x_{N-1},x_0=x_N`` and ``x_{N+1}=x_1``. 
+Here ``x_i`` is the state of the system and ``F`` is a forcing constant. 
+
 """
 function lorenz96(dx, x, p, t ) 
     F = p[1]
