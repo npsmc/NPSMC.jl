@@ -5,7 +5,7 @@ Modules = [NPSMC]
 Pages   = ["time_series.jl"]
 ```
 
-```julia
+```@example 1
 using NPSMC
 using Random
 
