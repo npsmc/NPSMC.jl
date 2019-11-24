@@ -7,8 +7,8 @@ using Plots
 # generate examples
 OUTPUT = joinpath(@__DIR__, "src", "generated")
 
-examples = filter(x -> occursin(r".jl", x), map(relpath, readdir(joinpath(@__DIR__, "src", "examples"))))
-example_pages = Any[]
+#examples = filter(x -> occursin(r".jl", x), map(relpath, readdir(joinpath(@__DIR__, "src", "examples"))))
+#example_pages = Any[]
 
 #for example in examples
 #
@@ -27,10 +27,17 @@ example_pages = Any[]
 #end
 
 pages = Any["Home" => "index.md",
-            "Models" => "models.md",
+            "Catalog" => "catalog.md",
             "Data Assimilation" => "data_assimilation.md",
-            "State Space" => "state_space.md"]
-            #"Examples" => example_pages ]
+            "State Space" => "state-space.md",
+            "Models" => "models.md",
+            "Ensemble Kalman filters" => "ensemble_kalman_filters.md",
+            "Ensemble Kalman smoothers" => "ensemble_kalman_smoothers.md",
+            "Forecasting" => "forecasting.md",
+            "Particle filters" => "particle_filters.md",
+            "Time Series" => "time-series.md"]
+#            "Utilities" => "utils.md"]
+#            #"Examples" => example_pages ]
 
 makedocs(
     modules   = [NPSMC],
