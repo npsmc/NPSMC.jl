@@ -1,8 +1,9 @@
 export EnKF
 
 """
-    Ensemble Kalman Filters
+    EnKF( np )
 
+Ensemble Kalman Filters
 """
 struct EnKF <: MonteCarloMethod
 
