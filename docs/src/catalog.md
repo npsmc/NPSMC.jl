@@ -2,5 +2,5 @@
 
 ```@autodocs
 Modules = [NPSMC]
-Pages   = ["catalog.jl"]
+Pages   = ["catalog.jl", "generate_data.jl"]
 ```
