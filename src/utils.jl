@@ -2,14 +2,22 @@ using Statistics, LinearAlgebra
 
 export RMSE
 
-" Compute the Root Mean Square Error between 2 n-dimensional vectors. "
+"""
+    RMSE(a, b)
+
+Compute the Root Mean Square Error between 2 n-dimensional vectors.
+"""
 function RMSE(a, b)
  
     sqrt(mean((vcat(a.u'...) .- vcat(b.u'...)).^2))
 
 end
 
-" Normalize the entries of a multidimensional array sum to 1. "
+"""
+    normalise!( w )
+
+Normalize the entries of a multidimensional array sum to 1.
+"""
 function normalise!( w )
 
     c = sum(w)
@@ -20,6 +28,8 @@ function normalise!( w )
 end
 
 """ 
+    mk_stochastic!(w)
+
 Ensure the matrix is stochastic, i.e., 
 the sum over the last dimension is 1.
 """
@@ -39,6 +49,8 @@ function mk_stochastic!(w :: Array{Float64,2})
 end
 
 """ 
+    sample_discrete(prob, r, c)
+
 Sampling from a non-uniform distribution. 
 """
 function sample_discrete(prob, r, c)
@@ -85,7 +97,11 @@ function inv_using_SVD(Mat, eigvalMax)
 
 end
 
-""" Multinomial resampler. """
+"""
+    resample_multinomial( w )
+
+Multinomial resampler. 
+"""
 function resample_multinomial( w :: Vector{Float64} )
 
     m = length(w)
@@ -105,7 +121,11 @@ function resample_multinomial( w :: Vector{Float64} )
     indx
 end
 
-""" Multinomial resampler. """
+""" 
+    resample!( indx, w )
+
+Multinomial resampler.
+"""
 function resample!( indx :: Vector{Int64}, w :: Vector{Float64} )
 
     m = length(w)
@@ -123,7 +143,8 @@ function resample!( indx :: Vector{Int64}, w :: Vector{Float64} )
 end
 
 """
-    ensure_pos_sym(M::Matrix{T}; ϵ::T = 1e-8) where T <: AbstractFloat
+    ensure_pos_sym(M; ϵ= 1e-8)
+
 Ensure that matrix `M` is positive and symmetric to avoid numerical errors when numbers are small by doing `(M + M')/2 + ϵ*I`
 
 reference : [StateSpaceModels.jl](https://github.com/LAMPSPUC/StateSpaceModels.jl)
