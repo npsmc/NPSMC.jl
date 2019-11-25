@@ -10,6 +10,9 @@ Lorenz-63 dynamical model ``u = [x, y, z]`` and ``p = [\\sigma, \\rho, \\mu]``:
 \\frac{dy}{dt} = x(ρ-z) - y \\\\
 \\frac{dz}{dt} = xy - βz \\\\
 ```
+
+- [Example Catalog](@ref)
+- [Lorenz system on wikipedia](https://en.wikipedia.org/wiki/Lorenz_system)
 """
 function lorenz63(du, u, p, t)
 
@@ -26,6 +29,8 @@ Sinus toy dynamical model
 ```math
 u̇₁ = p₁ \\cos(p₁t) 
 ```
+
+- Generate [Sinus data](@ref)
 """
 function sinus(du, u, p, t)
 
@@ -45,6 +50,7 @@ Lorenz-96 dynamical model. For ``i=1,...,N``:
 where it is assumed that ``x_{-1}=x_{N-1},x_0=x_N`` and ``x_{N+1}=x_1``. 
 Here ``x_i`` is the state of the system and ``F`` is a forcing constant. 
 
+- [Lorenz 96 model on wikipedia](https://en.wikipedia.org/wiki/Lorenz_96_model)
 """
 function lorenz96(dx, x, p, t ) 
     F = p[1]
