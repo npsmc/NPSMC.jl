@@ -7,7 +7,12 @@
 # the system (noted as `x`) at every time step `k`. Usually, they are
 # related following a nonlinear state-space model: 
 # 
-# ![nnss](https://tandeo.files.wordpress.com/2019/02/formule_nnss_model.png)
+# ```math
+# \\begin{aligned}
+# x_k & = f(x_{k-1}) + \\eta_k \\\\
+# y_k & = H x_k + \\epsilon_k 
+# \\end{aligned}
+# ```
 #
 # with ``\\eta`` and ``\\epsilon`` some independant white
 # Gaussian noises respectively respresenting the model forecast error
