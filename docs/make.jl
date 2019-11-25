@@ -1,3 +1,5 @@
+push!(LOAD_PATH,"../src/")
+
 using DifferentialEquations
 using DelimitedFiles
 using Documenter
@@ -8,13 +10,24 @@ using NPSMC
 # generate examples
 OUTPUT = joinpath(@__DIR__, "src", "generated")
 
-examples = filter(x -> occursin(r".jl", x), map(relpath, readdir(joinpath(@__DIR__, "..", "examples"))))
+# examples = filter(x -> occursin(r".jl", x), map(relpath, readdir(joinpath(@__DIR__, "..", "examples"))))
+
+examples = String[]
+push!(examples, "sinus_data.jl")
+push!(examples, "catalog.jl")
+#push!(examples, "analog_forecasting.jl")
+#push!(examples, "lorenz63.jl")
+#push!(examples, "model_forecasting.jl  ")
+#push!(examples, "lorenz96.jl")
+#push!(examples, "monte_carlo.jl")
+#push!(examples, "time_series.jl")
+
 example_pages = Any[]
 
 for example in examples
 
     EXAMPLE = joinpath(@__DIR__, "..", "examples", example)
-    page = string("generated/", example[1:end-3],".md")
+    @show page = string("generated/", example[1:end-3],".md")
 
     open(`head -n1 $EXAMPLE`) do io
          title = join(readdlm(io)[3:end], " ")
@@ -38,8 +51,8 @@ pages = Any["Home" => "index.md",
             "Forecasting" => "forecasting.md",
             "Particle filters" => "particle_filters.md",
             "Time Series" => "time-series.md",
-            "Utilities" => "utils.md"]
-            #"Examples" => example_pages ]
+            "Utilities" => "utils.md",
+            "Examples" => example_pages ]
 
 @show pages
 
@@ -55,5 +68,4 @@ makedocs(
 deploydocs(
     deps   = Deps.pip("mkdocs", "python-markdown-math"),
     repo   = "github.com/npsmc/NPSMC.jl.git",
-    push_preview = true
 )
