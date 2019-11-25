@@ -29,15 +29,24 @@ tspan = (0.0,5.0)
 prob  = ODEProblem(ssm.model, u0, tspan, ssm.params)
 u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
+# # Generate the data
+
 xt, yo, catalog = generate_data( ssm, u0 )
+
+
+# # Create the forecasting function
 
 af = AnalogForecasting( 50, xt, catalog; 
     regression = :local_linear, sampling = :multinomial )
 
+# # Data assimilation
+
 np = 100
 data_assimilation = DataAssimilation( af, xt, ssm.sigma2_obs)
-x̂ = data_assimilation(yo, EnKS(np));
+x̂ = data_assimilation(yo, EnKS(np), progress = false);
 println(RMSE(xt, x̂))
+
+# # Plot results
 
 plot(xt.t, vcat(xt.u'...)[:,1], label=:true)
 plot!(xt.t, vcat(x̂.u'...)[:,1], label=:forecasted)
