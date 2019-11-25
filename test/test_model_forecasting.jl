@@ -1,7 +1,7 @@
 @testset " Classic model forecasting " begin
 
 import NPSMC: normalise!, sample_discrete
-import DifferentialEquations: ODEProblem, solve
+import DifferentialEquations: ODEProblem, solve, Tsit5
 
 σ = 10.0
 ρ = 28.0
@@ -27,7 +27,7 @@ ssm = StateSpaceModel( lorenz63,
 u0    = [8.0;0.0;30.0]
 tspan = (0.0,5.0)
 prob  = ODEProblem(lorenz63, u0, tspan, parameters)
-u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
+u0    = last(solve(prob, Tsit5(), reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 )
 
