@@ -61,6 +61,9 @@ end
 - Q                  : model covariance
 - R                  : observation covariance
 
+
+- Example [Sinus model](@ref)
+
 """
 struct SSM
 
