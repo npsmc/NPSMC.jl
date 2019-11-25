@@ -62,7 +62,7 @@ end
 - R                  : observation covariance
 
 
-- Example [Sinus model](@ref)
+- Example [Sinus data](@ref)
 
 """
 struct SSM
