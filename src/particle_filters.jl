@@ -13,7 +13,7 @@ Apply particle filters data assimilation technics using
 model forecasting or analog forecasting. 
 
 """
-function ( da :: DataAssimilation )( yo :: TimeSeries, mc :: PF )
+function ( da :: DataAssimilation )( yo :: TimeSeries, mc :: PF; progress = true )
 
     # dimensions
     nt = yo.nt        # number of observations
@@ -66,7 +66,12 @@ function ( da :: DataAssimilation )( yo :: TimeSeries, mc :: PF )
 
     kcount = 1
 
-    @showprogress 1 for k in 2:nt
+    if progress p = Progress(nt) end
+
+    for k in 2:nt
+
+        if progress next!(p) end
+
         # update step (compute forecasts) and add small Gaussian noise
         xf, tej = da.m(part[k-1]) 
         xf .+= rand(MvNormal(zeros(nv), da.B ./ 100.0), np)
