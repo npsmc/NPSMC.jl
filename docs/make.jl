@@ -20,7 +20,6 @@ push!(examples, "analog_forecasting.jl")
 #push!(examples, "lorenz63.jl")
 #push!(examples, "lorenz96.jl")
 #push!(examples, "monte_carlo.jl")
-#push!(examples, "time_series.jl")
 
 example_pages = Any[]
 
