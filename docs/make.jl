@@ -8,25 +8,25 @@ using NPSMC
 # generate examples
 OUTPUT = joinpath(@__DIR__, "src", "generated")
 
-#examples = filter(x -> occursin(r".jl", x), map(relpath, readdir(joinpath(@__DIR__, "src", "examples"))))
-#example_pages = Any[]
-#
-#for example in examples
-#
-#    EXAMPLE = joinpath(@__DIR__, "src", "examples", example)
-#    page = string("generated/", example[1:end-3],".md")
-#
-#    open(`head -n1 $EXAMPLE`) do io
-#         title = join(readdlm(io)[3:end], " ")
-#         push!(example_pages, title => page)
-#    end
-#
-#    Literate.markdown(EXAMPLE, OUTPUT)
-##    #Literate.notebook(EXAMPLE, OUTPUT)
-##    #Literate.script(EXAMPLE, OUTPUT)
-#end
-#
-#@show example_pages
+examples = filter(x -> occursin(r".jl", x), map(relpath, readdir(joinpath(@__DIR__, "..", "examples"))))
+example_pages = Any[]
+
+for example in examples
+
+    EXAMPLE = joinpath(@__DIR__, "..", "examples", example)
+    page = string("generated/", example[1:end-3],".md")
+
+    open(`head -n1 $EXAMPLE`) do io
+         title = join(readdlm(io)[3:end], " ")
+         push!(example_pages, title => page)
+    end
+
+    Literate.markdown(EXAMPLE, OUTPUT)
+    #Literate.notebook(EXAMPLE, OUTPUT)
+    #Literate.script(EXAMPLE, OUTPUT)
+end
+
+@show example_pages
 
 pages = Any["Home" => "index.md",
             "Catalog" => "catalog.md",
@@ -49,11 +49,11 @@ makedocs(
     doctest   = true, 
     authors   = "Pierre Navaro",
     format    = Documenter.HTML(),
-    pages     = pages,
-    debug     = true
+    pages     = pages
 )
 
 deploydocs(
     deps   = Deps.pip("mkdocs", "python-markdown-math"),
     repo   = "github.com/npsmc/NPSMC.jl.git",
+    push_preview = true
 )
