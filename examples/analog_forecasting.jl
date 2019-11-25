@@ -33,7 +33,6 @@ u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 )
 
-
 # # Create the forecasting function
 
 af = AnalogForecasting( 50, xt, catalog; 
