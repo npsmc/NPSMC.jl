@@ -1,4 +1,4 @@
-# # Sinus model
+# # Sinus data
 
 using LinearAlgebra
 using NPSMC
