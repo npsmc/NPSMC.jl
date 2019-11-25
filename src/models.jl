@@ -6,11 +6,11 @@ export lorenz63, lorenz96, sinus
 
 Lorenz-63 dynamical model ``u = [x, y, z]`` and ``p = [\\sigma, \\rho, \\mu]``:
 ```math
-\begin{align}
-\frac{dx}{dt} &= σ(y-x) \\
-\frac{dy}{dt} &= x(ρ-z) - y \\
-\frac{dz}{dt} &= xy - βz \\
-\end{align}
+\\begin{align}
+\\frac{dx}{dt} &= σ(y-x) \\\\
+\\frac{dy}{dt} &= x(ρ-z) - y \\\\
+\\frac{dz}{dt} &= xy - βz \\\\
+\\end{align}
 ```
 """
 function lorenz63(du, u, p, t)
