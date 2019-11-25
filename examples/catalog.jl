@@ -1,4 +1,4 @@
-# # Catalog
+# # Example Catalog
 
 using Plots, NPSMC
 
