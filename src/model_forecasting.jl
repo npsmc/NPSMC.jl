@@ -1,4 +1,4 @@
-import DifferentialEquations: ODEProblem, EnsembleProblem, solve
+import DifferentialEquations: ODEProblem, EnsembleProblem, solve, Tsit5
 
 """ 
 
