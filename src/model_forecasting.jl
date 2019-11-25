@@ -1,4 +1,4 @@
-using DifferentialEquations
+import DifferentialEquations: ODEProblem, EnsembleProblem, solve
 
 """ 
 
