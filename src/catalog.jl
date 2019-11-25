@@ -5,6 +5,8 @@ export Catalog
 
 Data type to store analogs and succesors observations
 from the Space State model
+
+- Example [Catalog](@ref)
 """
 struct Catalog
 
