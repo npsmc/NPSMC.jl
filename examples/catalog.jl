@@ -25,11 +25,13 @@ ssm = StateSpaceModel( lorenz63,
 
 xt, yo, catalog = generate_data( ssm , [10.0;0.0;0.0]);
 
+# ## Time series
 
 plot(catalog.analogs[1,:])
 plot!(catalog.analogs[2,:])
 plot!(catalog.analogs[3,:])
 
+# ## Phase space plot
 
 p = plot3d(1, xlim=(-25,25), ylim=(-25,25), zlim=(0,50),
                 title = "Lorenz 63", marker = 1)
