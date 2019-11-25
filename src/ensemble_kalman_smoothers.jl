@@ -12,7 +12,7 @@ end
 Apply stochastic and sequential data assimilation technics using 
 model forecasting or analog forecasting. 
 """
-function ( da :: DataAssimilation)( yo :: TimeSeries, mc :: EnKS )
+function ( da :: DataAssimilation)( yo :: TimeSeries, mc :: EnKS; progress = true )
 
     # dimensions
     nt = yo.nt        # number of observations
@@ -32,7 +32,11 @@ function ( da :: DataAssimilation)( yo :: TimeSeries, mc :: EnKS )
     ef            = similar(xf)
     Ks            = zeros(Float64,(nv,nv))
 
-    @showprogress 1 for k in 1:nt
+    if progress p = Progress(nt) end
+
+    for k in 1:nt
+
+        if progress next!(p) end
 
         # update step (compute forecasts)            
         if k == 1
@@ -77,7 +81,11 @@ function ( da :: DataAssimilation)( yo :: TimeSeries, mc :: EnKS )
 
     end 
 
-    @showprogress -1 for k in nt:-1:1          
+    if progress p = Progress(nt) end
+
+    for k in nt:-1:1          
+
+        if progress next!(p) end
 
         if k == nt
             part[k] .= part[nt]
