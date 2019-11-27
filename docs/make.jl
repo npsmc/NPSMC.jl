@@ -51,7 +51,8 @@ pages = Any["Home" => "index.md",
             "Particle filters" => "particle_filters.md",
             "Time Series" => "time-series.md",
             "Utilities" => "utils.md",
-            "Examples" => example_pages ]
+            "Examples" => example_pages,
+            "Some ideas" => "ideas.md" ]
 
 @show pages
 

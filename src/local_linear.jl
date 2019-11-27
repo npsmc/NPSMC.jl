@@ -64,8 +64,10 @@ function compute( ll :: LocalLinear, x, xf_tmp, xf_mean, ip, X, Y, w )
     cov_xf  = (Y * (w .* Y')) ./ (1 .- tr(ll.Cxx2))
     cov_xf .= Symmetric(cov_xf .* (1 .+ tr(ll.Cxx2 * ll.X0r * ll.X0r' * ll.Cxx)))
 
-    return cov_xf
+    if isposdef(cov_xf)
+        return PDMat(cov_xf)
+    else
+        return PDMat(ensure_pos_sym(cov_xv))
+    end
 
 end
-
-            
