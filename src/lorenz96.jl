@@ -21,8 +21,8 @@ dt_integration = 0.05 # integration time
 dt_states = 1 # number of integration times between consecutive states (for xt and catalog)
 dt_obs = 4 # number of integration times between consecutive observations (for yo)
 var_obs = randperm(rng, J)[1:20] # indices of the observed variables
-nb_loop_train = 10 # size of the catalog
-nb_loop_test = 2 # size of the true state and noisy observations
+nb_loop_train = 20 # size of the catalog
+nb_loop_test = 5 # size of the true state and noisy observations
 sigma2_catalog = 0.   # variance of the model error to generate the catalog   
 sigma2_obs = 2. # variance of the observation error to generate observations
 
@@ -64,11 +64,11 @@ local_analog_matrix =  BitArray{2}(diagm( -2  => trues(xt.nv-2),
 neighborhood = local_analog_matrix
 regression = :local_linear
 sampling   = :gaussian
-f  = AnalogForecasting( 120, xt, catalog, neighborhood, regression, sampling)
+f  = AnalogForecasting( 100, xt, catalog, neighborhood, regression, sampling)
 data_assimilation_local = DataAssimilation( f, xt, ssm.sigma2_obs )
 @time x̂_analog_local  = data_assimilation_local(yo, EnKS(500))
 
-f  = AnalogForecasting( 120, xt, catalog, regression=regression, sampling=sampling)
+f  = AnalogForecasting( 100, xt, catalog, regression=regression, sampling=sampling)
 data_assimilation_global = DataAssimilation( f, xt, ssm.sigma2_obs )
 @time x̂_analog_global  = data_assimilation_global(yo, EnKS(500))
 println(RMSE(xt, x̂_analog_global))
