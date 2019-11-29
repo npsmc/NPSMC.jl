@@ -30,3 +30,6 @@ struct TimeSeries <:  AbstractTimeSeries
 
 end
 
+import Base:getindex
+
+function getindex( x :: TimeSeries, i :: Int) getindex.(x.u, i) end
