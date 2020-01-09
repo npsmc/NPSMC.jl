@@ -16,6 +16,7 @@ parameters of the analog forecasting method
 """
 struct AnalogForecasting <: AbstractForecasting 
 
+    kdt           :: KDTree
     k             :: Int64 # number of analogs
     neighborhood  :: BitArray{2}
     catalog       :: Catalog
@@ -26,11 +27,14 @@ struct AnalogForecasting <: AbstractForecasting
                                 xt      :: TimeSeries, 
                                 catalog :: Catalog;
                                 regression = :local_linear,
-                                sampling   = :gaussian )
+                                sampling   = :gaussian,
+                                leafsize = 50 )
     
         neighborhood = trues((xt.nv, xt.nv)) # global analogs
+
+        kdt = KDTree( catalog.analogs, leafsize = leafsize)
     
-        new( k, neighborhood, catalog, regression, sampling)
+        new( kdt, k, neighborhood, catalog, regression, sampling)
     
     end 
 
@@ -39,10 +43,12 @@ struct AnalogForecasting <: AbstractForecasting
                                 catalog      :: Catalog,
                                 neighborhood :: BitArray{2},
                                 regression   :: Symbol,
-                                sampling     :: Symbol )
+                                sampling     :: Symbol,
+                                leafsize = 50 )
     
+        kdt = KDTree( catalog.analogs, leafsize=leafsize)
     
-        new( k, neighborhood, catalog, regression, sampling)
+        new( kdt, k, neighborhood, catalog, regression, sampling)
     
     end 
 
@@ -60,6 +66,11 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
     ivar           = [1]
     condition      = true
 
+    # global analog forecasting
+    index_knn, dist_knn = knn(forecasting.kdt, x, forecasting.k)
+    # parameter of normalization for the kernels
+    λ = median(Iterators.flatten(dist_knn))
+
     while condition
 
         if all(forecasting.neighborhood)
@@ -70,12 +81,6 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
             ivar_neighboor = findall(vec(forecasting.neighborhood[ivar,:]))
         end
 
-        # global analog forecasting
-        kdt = KDTree( forecasting.catalog.analogs, leafsize=50)
-        index_knn, dist_knn = knn(kdt, x, forecasting.k)
-        
-        # parameter of normalization for the kernels
-        λ = median(Iterators.flatten(dist_knn))
         # compute weights
         weights  = [exp.(-dist.^2 ./ λ) for dist in dist_knn]
         for (ip,w) in enumerate(weights)
@@ -103,7 +108,6 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
                                    .* (Exf .* weights[ip]') * Exf')
 
             elseif forecasting.regression == :increment # method "locally-incremental"
-                
                 # compute the analog forecasts
                 xf_tmp[ivar,:] .= (x[ivar,ip] 
                                .+ forecasting.catalog.successors[ivar,index_knn[ip]]
@@ -131,7 +135,6 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
             else
 
                 @error "regression: locally_constant, :increment, :local_linear "
-
             end
             
             # Gaussian sampling
@@ -144,7 +147,8 @@ function ( forecasting :: AnalogForecasting)(x :: Array{Float64,2})
             # Multinomial sampling
             elseif forecasting.sampling == :multinomial
 
-                # random sampling from the multinomial distribution of the weights
+                # random sampling from the multinomial distribution 
+                # of the weights
                 # this speedup is due to Peter Acklam
                 cumprob = cumsum(weights[ip])
                 R = rand()
