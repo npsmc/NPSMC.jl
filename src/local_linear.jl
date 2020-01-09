@@ -50,7 +50,7 @@ function compute( ll :: LocalLinear, x, xf_tmp, xf_mean, ip, X, Y, w )
     mul!(ll.Cxx , (ll.Xr .* w'), ll.Xr')
     mul!(ll.Cxx2, (ll.Xr .* w'.^2), ll.Xr')
     mul!(ll.Cxy, (Y  .* w'), ll.Xr')
-    ll.Cxx .= pinv(ll.Cxx, rtol=0.001) 
+    ll.Cxx .= pinv(ll.Cxx, rtol=0.01) 
     ll.Cxx2 .= ll.Cxx2 * ll.Cxx
     # regression on principal components
     mul!(ll.beta, ll.Cxy, ll.Cxx) 
