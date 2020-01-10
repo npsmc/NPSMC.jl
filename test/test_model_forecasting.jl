@@ -24,6 +24,7 @@ ssm = StateSpaceModel( lorenz63,
                        sigma2_catalog, sigma2_obs )
 
 # compute u0 to be in the attractor space
+
 u0    = [8.0;0.0;30.0]
 tspan = (0.0,5.0)
 prob  = ODEProblem(lorenz63, u0, tspan, parameters)
@@ -31,9 +32,9 @@ u0    = last(solve(prob, Tsit5(), reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 )
 
-data_assimilation = DataAssimilation( ssm, xt )
+DA = DataAssimilation( ssm, xt )
 
-x̂ = data_assimilation(yo, EnKS(100))
+x̂ = forecast( DA, yo, EnKS(100))
 
 rmse = RMSE(xt, x̂)
 
