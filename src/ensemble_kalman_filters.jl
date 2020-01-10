@@ -19,7 +19,7 @@ end
 Apply stochastic and sequential data assimilation technics using 
 model forecasting or analog forecasting. 
 """
-function ( da :: DataAssimilation )( yo :: TimeSeries, mc :: EnKF; progress = true )
+function forecast( da :: DataAssimilation, yo :: TimeSeries, mc :: EnKF; progress = true )
 
     # dimensions
     nt = yo.nt        # number of observations
