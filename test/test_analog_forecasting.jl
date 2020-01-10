@@ -28,11 +28,8 @@ nb_loop_test   = 10
 sigma2_catalog = 0.0
 sigma2_obs     = 2.0
 
-ssm = StateSpaceModel( lorenz63,
-                       dt_integration, dt_states, dt_obs, 
-                       parameters, var_obs,
-                       nb_loop_train, nb_loop_test,
-                       sigma2_catalog, sigma2_obs )
+ssm = StateSpaceModel( lorenz63, dt_integration, dt_states, dt_obs, parameters, var_obs,
+                       nb_loop_train, nb_loop_test, sigma2_catalog, sigma2_obs )
 
 # compute u0 to be in the attractor space
 u0    = [8.0;0.0;30.0]
@@ -49,8 +46,8 @@ for regression in [:local_linear, :locally_constant, :increment]
                                 sampling   = sampling )
         for method in [EnKS(100), EnKF(100), PF(100)]
             println( " $regression, $sampling, $method ")
-            data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-            @time x̂  = data_assimilation(yo, method)
+            DA = DataAssimilation( f, xt, ssm.sigma2_obs )
+            @time x̂  = forecast(DA, yo, method)
             rmse = RMSE(xt, x̂) 
             println( " rmse = $rmse ")
             @test rmse < 3.0
