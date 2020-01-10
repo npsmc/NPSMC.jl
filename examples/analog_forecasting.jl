@@ -41,12 +41,12 @@ af = AnalogForecasting( 50, xt, catalog;
 # # Data assimilation
 
 np = 100
-data_assimilation = DataAssimilation( af, xt, ssm.sigma2_obs)
-x̂ = data_assimilation(yo, EnKS(np), progress = false);
+DA = DataAssimilation( af, xt, ssm.sigma2_obs)
+x̂ = forecast(DA, yo, EnKS(np), progress = false);
 println(RMSE(xt, x̂))
 
 # # Plot results
 
-plot(xt.t, vcat(xt.u'...)[:,1], label=:true)
-plot!(xt.t, vcat(x̂.u'...)[:,1], label=:forecasted)
-scatter!(yo.t, vcat(yo.u'...)[:,1], markersize=2, label=:observed)
+plot(xt.t, xt[1], label=:true)
+plot!(xt.t, x̂[1], label=:forecasted)
+scatter!(yo.t, yo[1], markersize=2, label=:observed)
