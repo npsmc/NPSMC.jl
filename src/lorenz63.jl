@@ -45,8 +45,24 @@ sampling   = :gaussian
 f  = AnalogForecasting( 100, xt, catalog; 
                         regression = regression,
                         sampling   = sampling )
-method = EnKS(200)
 DA = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂  = forecast( DA, yo, method)
+
+@show np = 100
+
+@time x̂  = forecast( DA, yo, EnKF(np))
 rmse = RMSE(xt, x̂) 
-println( " rmse = $rmse ")
+println( " Analog forecasting Ensemble Kalman filters rmse = $rmse ")
+
+@time x̂  = forecast( DA, yo, EnKS(np))
+rmse = RMSE(xt, x̂) 
+println( " Analog forecasting Ensemble Kalman smoothers rmse = $rmse ")
+
+@time x̂  = forecast( DA, yo, PF(np))
+rmse = RMSE(xt, x̂) 
+println( " Analog forecasting Particle Filters rmse = $rmse ")
+
+DA = DataAssimilation( ssm, xt )
+
+x̂ = forecast( DA, yo, EnKS(np))
+rmse = RMSE(xt, x̂)
+println(" Model forecasting model forecasting RMSE : $rmse ")
