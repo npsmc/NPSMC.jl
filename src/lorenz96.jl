@@ -62,12 +62,12 @@ neighborhood = local_analog_matrix
 regression = :local_linear
 sampling   = :gaussian
 f  = AnalogForecasting( 100, xt, catalog, neighborhood, regression, sampling)
-data_assimilation_local = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂_analog_local  = data_assimilation_local(yo, EnKS(500))
+DA_local = DataAssimilation( f, xt, ssm.sigma2_obs )
+@time x̂_analog_local  = forecast(DA_local, yo, EnKS(500))
 
 f  = AnalogForecasting( 100, xt, catalog, regression=regression, sampling=sampling)
-data_assimilation_global = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂_analog_global  = data_assimilation_global(yo, EnKS(500))
+DA_global = DataAssimilation( f, xt, ssm.sigma2_obs )
+@time x̂_analog_global  = forecast(DA_global, yo, EnKS(500))
 println(RMSE(xt, x̂_analog_global))
 
 # # error
