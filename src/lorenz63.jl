@@ -6,12 +6,9 @@ include("plot.jl")
 include("generate_data.jl")
 include("utils.jl")
 include("model_forecasting.jl")
-include("local_linear.jl")
+include("regression.jl")
 include("analog_forecasting.jl")
 include("data_assimilation.jl")
-include("ensemble_kalman_filters.jl")
-include("ensemble_kalman_smoothers.jl")
-include("particle_filters.jl")
 
 import DifferentialEquations: ODEProblem, solve
 
@@ -49,7 +46,7 @@ f  = AnalogForecasting( 100, xt, catalog;
                         regression = regression,
                         sampling   = sampling )
 method = EnKS(200)
-data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂  = data_assimilation(yo, method)
+DA = DataAssimilation( f, xt, ssm.sigma2_obs )
+@time x̂  = forecast( DA, yo, method)
 rmse = RMSE(xt, x̂) 
 println( " rmse = $rmse ")
