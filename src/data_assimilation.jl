@@ -47,3 +47,9 @@ struct DataAssimilation
     end
 
 end
+
+export forecast
+
+include("ensemble_kalman_filters.jl")
+include("ensemble_kalman_smoothers.jl")
+include("particle_filters.jl")
