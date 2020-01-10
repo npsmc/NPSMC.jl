@@ -84,19 +84,19 @@ xt, yo, catalog = generate_data(ssm, u0);
 
 # ### PLOT STATE, OBSERVATIONS AND CATALOG
 
-plot(xt.t,  vcat(xt.u'...)[:,1], line=(:solid,:red), label="x1")
-scatter!(yo.t, vcat(yo.u'...)[:,1], markersize=2)
-plot!(xt.t, vcat(xt.u'...)[:,20],line=(:solid,:blue), label="x20")
-scatter!(yo.t, vcat(yo.u'...)[:,20],markersize=2)
-plot!(xt.t, vcat(xt.u'...)[:,40],line=(:solid,:green), label="x40")
-scatter!(yo.t, vcat(yo.u'...)[:,40],markersize=2)
+plot(xt.t,  xt[1], line=(:solid,:red), label="x1")
+scatter!(yo.t, yo[1], markersize=2)
+plot!(xt.t, xt[20], line=(:solid,:blue), label="x20")
+scatter!(yo.t, yo[20], markersize=2)
+plot!(xt.t, xt.u[40], line=(:solid,:green), label="x40")
+scatter!(yo.t, yo[40], markersize=2)
 xlabel!("Lorenz-96 times")
 title!("Lorenz-96 true (continuous lines) and observed trajectories (dots)")
 
 # ### MODEL DATA ASSIMILATION (with the global analogs)
 
-data_assimilation = DataAssimilation( ssm, xt )
-@time x̂_classical_global  = data_assimilation(yo, EnKS(500));
+DA = DataAssimilation( ssm, xt )
+@time x̂_classical_global  = forecast(DA, yo, EnKS(500));
 
 RMSE(xt, x̂_classical_global)
 
@@ -123,8 +123,9 @@ heatmap(local_analog_matrix)
 
 f  = AnalogForecasting( 100, xt, catalog, 
     regression = :local_linear, sampling = :gaussian)
-data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂_analog_global  = data_assimilation(yo, EnKS(500))
+
+DA = DataAssimilation( f, xt, ssm.sigma2_obs )
+@time x̂_analog_global  = forecast(DA, yo, EnKS(500))
 RMSE(xt, x̂_analog_global)
 
 # + {"nbpresent": {"id": "02cf2959-e712-4af8-8bb6-f914608e15ac"}, "cell_type": "markdown"}
@@ -135,8 +136,8 @@ neighborhood = local_analog_matrix
 regression = :local_linear
 sampling   = :gaussian
 f  = AnalogForecasting( 100, xt, catalog, neighborhood, regression, sampling)
-data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂_analog_local  = data_assimilation(yo, EnKS(500))
+DA = DataAssimilation( f, xt, ssm.sigma2_obs )
+@time x̂_analog_local  = forecast(DA, yo, EnKS(500))
 RMSE(xt, x̂_analog_local)
 
 # + {"nbpresent": {"id": "35f54171-6e87-4b0f-9cb2-821d9c0d8b96"}, "cell_type": "markdown"}
