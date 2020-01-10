@@ -2,19 +2,20 @@
 # ---
 # jupyter:
 #   jupytext:
+#     cell_metadata_json: true
 #     formats: ipynb,jl:light
 #     text_representation:
 #       extension: .jl
 #       format_name: light
-#       format_version: '1.4'
-#       jupytext_version: 1.2.4
+#       format_version: '1.5'
+#       jupytext_version: 1.3.1
 #   kernelspec:
-#     display_name: Julia 1.2.0
+#     display_name: Julia 1.3.0
 #     language: julia
-#     name: julia-1.2
+#     name: julia-1.3
 # ---
 
-# + {"nbpresent": {"id": "76428090-b279-4d85-b5bc-e0fdefafc294"}, "cell_type": "markdown"}
+# + [markdown] {"nbpresent": {"id": "76428090-b279-4d85-b5bc-e0fdefafc294"}}
 # # PROBLEM STATEMENT
 #
 # Data assimilation are numerical methods used in geosciences to mix the information of observations (noted as $y$) and a dynamical model (noted as $f$) in order to estimate the true/hidden state of the system (noted as $x$) at every time step $k$. Usually, they are related following a nonlinear state-space model:
@@ -27,7 +28,7 @@
 # Lguensat, R., Tandeo, P., Ailliot, P., Pulido, M., & Fablet, R. (2017). The Analog Data Assimilation. *Monthly Weather Review*, 145(10), 4093-4107.
 # If you use this library, please do not forget to cite this work.
 
-# + {"nbpresent": {"id": "af657441-0912-4749-b537-6e1734f875bb"}, "cell_type": "markdown"}
+# + [markdown] {"nbpresent": {"id": "af657441-0912-4749-b537-6e1734f875bb"}}
 # # USING PACKAGES
 #
 # Here, we import the different Julia packages. In order to use the analog methog (or nearest neighboor search), we need to install the ["NPSMC" library](https://github.com/npsmc/NPSMC.jl).
@@ -35,12 +36,12 @@
 # + {"nbpresent": {"id": "f975dd20-65cf-43f8-8a6e-96f2acbad4e4"}}
 using Plots, DifferentialEquations, NPSMC
 
-# + {"nbpresent": {"id": "702967c4-5161-4544-a9f1-88cd5d0155da"}, "cell_type": "markdown"}
+# + [markdown] {"nbpresent": {"id": "702967c4-5161-4544-a9f1-88cd5d0155da"}}
 # # TEST ON LORENZ-63
 #
 # To begin, as dynamical model $f$, we use the Lorenz-63 chaotic system. First, we generate simulated trajectories from this dynamical model and store them into the catalog. Then, we use this catalog to emulate the dynamical model and we apply the analog data assimilation. Finally, we compare the results of this data-driven approach to the classical data assimilation (using the true Lorenz-63 equations as dynamical model).
 
-# + {"nbpresent": {"id": "81f56606-9081-47fd-8968-13d85c93063c"}, "cell_type": "markdown"}
+# + [markdown] {"nbpresent": {"id": "81f56606-9081-47fd-8968-13d85c93063c"}}
 # ### GENERATE SIMULATED DATA (LORENZ-63 MODEL)
 
 # + {"nbpresent": {"id": "81f56606-9081-47fd-8968-13d85c93063c"}}
@@ -94,7 +95,7 @@ DA = DataAssimilation( f, xt, ssm.sigma2_obs )
 x̂_analog = forecast( DA, yo, EnKS(np))
 @time RMSE( xt, x̂_analog)
 
-# + {"nbpresent": {"id": "7a6c203f-bcbb-4c52-8b85-7e6be3945044"}, "cell_type": "markdown"}
+# + [markdown] {"nbpresent": {"id": "7a6c203f-bcbb-4c52-8b85-7e6be3945044"}}
 # ### COMPARISON BETWEEN CLASSICAL AND ANALOG DATA ASSIMILATION
 
 # + {"nbpresent": {"id": "7a6c203f-bcbb-4c52-8b85-7e6be3945044"}}
@@ -103,10 +104,13 @@ plot!( xt.t, x̂_classical[1], label="classical")
 plot!( xt.t, x̂_analog[1], label="analog")
 scatter!( yo.t, yo[1]; markersize=2, label="observations")
 
-# + {"nbpresent": {"id": "971ff88b-e8dc-43dc-897e-71a7b6b659c0"}, "cell_type": "markdown"}
+# + [markdown] {"nbpresent": {"id": "971ff88b-e8dc-43dc-897e-71a7b6b659c0"}}
 # The results show that performances of the data-driven analog data assimilation are closed to those of the model-driven data assimilation. The error can be reduced by augmenting the size of the catalog "nb_loop_train".
 
-# + {"nbpresent": {"id": "8f5b99c6-6771-4a2f-8ff5-f6693d6b9916"}, "cell_type": "markdown"}
+# + [markdown] {"nbpresent": {"id": "8f5b99c6-6771-4a2f-8ff5-f6693d6b9916"}}
 # # Remark
 #
 # Note that for all the previous experiments, we use the robust Ensemble Kalman Smoother (EnKS) with the increment or local linear regressions and the Gaussian sampling. If you want to have realistic state estimations, we preconize the use of the Particle Filter (DA.method = 'PF') with the locally constant regression (AF.regression = 'locally_constant') and the multinomial sampler (AF.sampling = 'multinomial') with a large number of particles (DA.N). For more details about the different options, see the attached publication: Lguensat, R., Tandeo, P., Ailliot, P., Pulido, M., & Fablet, R. (2017). The Analog Data Assimilation. *Monthly Weather Review*, 145(10), 4093-4107.
+# -
+
+
