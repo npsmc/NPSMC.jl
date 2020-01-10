@@ -54,12 +54,12 @@ xt, yo, catalog = generate_data(ssm, u0);
 
 # ## Plot state, observations and catalog
 
-plot(xt.t,  vcat(xt.u'...)[:,1], line=(:solid,:red), label="x1")
-scatter!(yo.t, vcat(yo.u'...)[:,1], markersize=2)
-plot!(xt.t, vcat(xt.u'...)[:,20],line=(:solid,:blue), label="x20")
-scatter!(yo.t, vcat(yo.u'...)[:,20],markersize=2)
-plot!(xt.t, vcat(xt.u'...)[:,40],line=(:solid,:green), label="x40")
-scatter!(yo.t, vcat(yo.u'...)[:,40],markersize=2)
+plot(xt.t,  xt[1], line=(:solid,:red), label="x1")
+scatter!(yo.t, yo[1], markersize=2)
+plot!(xt.t, xt[20],line=(:solid,:blue), label="x20")
+scatter!(yo.t, yo[20],markersize=2)
+plot!(xt.t, xt[40],line=(:solid,:green), label="x40")
+scatter!(yo.t, yo[40],markersize=2)
 xlabel!("Lorenz-96 times")
 title!("Lorenz-96 true (continuous lines) and observed trajectories (dots)")
 
