@@ -90,23 +90,23 @@ regression = :local_linear
 sampling = :gaussian
 k, np = 100, 500
 
-data_assimilation = DataAssimilation( ssm, xt )
-x̂_classical = data_assimilation(yo, EnKS(np), progress = false)
+DA = DataAssimilation( ssm, xt )
+x̂_classical = forecast(DA, yo, EnKS(np), progress = false)
 @time RMSE( xt, x̂_classical)
 
 # ## Analog data assimilation
 
 f  = AnalogForecasting( k, xt, catalog; regression = regression, sampling = sampling )
-data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-x̂_analog = data_assimilation(yo, EnKS(np), progress = false)
+DA = DataAssimilation( f, xt, ssm.sigma2_obs )
+x̂_analog = forecast(DA, yo, EnKS(np), progress = false)
 @time RMSE( xt, x̂_analog)
 
 # ## Comparison between classical and analog data assimilation
 
-plot( xt.t, vcat(xt.u'...)[:,1], label="true state")
-plot!( xt.t, vcat(x̂_classical.u'...)[:,1], label="classical")
-plot!( xt.t, vcat(x̂_analog.u'...)[:,1], label="analog")
-scatter!( yo.t, vcat(yo.u'...)[:,1]; markersize=2, label="observations")
+plot( xt.t, xt[1], label="true state")
+plot!( xt.t, x̂_classical[1], label="classical")
+plot!( xt.t, x̂_analog[1], label="analog")
+scatter!( yo.t, yo[1]; markersize=2, label="observations")
 
 # The results show that performances of the data-driven analog data
 # assimilation are closed to those of the model-driven data assimilation.
