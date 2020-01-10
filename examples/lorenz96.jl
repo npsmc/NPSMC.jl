@@ -65,8 +65,8 @@ title!("Lorenz-96 true (continuous lines) and observed trajectories (dots)")
 
 # ## Model data assimilation (with the global analogs)
 
-data_assimilation = DataAssimilation( ssm, xt )
-@time x̂_classical_global  = data_assimilation(yo, EnKS(500), progress = false);
+DA = DataAssimilation( ssm, xt )
+@time x̂_classical_global  = forecast(DA, yo, EnKS(500), progress = false);
 
 # - RMSE
 
@@ -97,12 +97,12 @@ spy(sparse(local_analog_matrix))
 
 # ## Analog data assimilation (with the global analogs)
 
-f  = AnalogForecasting( 120, xt, catalog, 
-    regression = :local_linear, sampling = :gaussian)
+f  = AnalogForecasting( 100, xt, catalog, 
+    regression = :locally_constant, sampling = :gaussian)
 
-data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
+DA = DataAssimilation( f, xt, ssm.sigma2_obs )
 
-@time x̂_analog_global  = data_assimilation(yo, EnKS(500), progress = false)
+@time x̂_analog_global  = forecast( DA, yo, EnKS(500), progress = false)
 RMSE(xt, x̂_analog_global)
 
 # ## Analog data assimilation (with the local analogs)
@@ -110,9 +110,11 @@ RMSE(xt, x̂_analog_global)
 neighborhood = local_analog_matrix
 regression = :local_linear
 sampling   = :gaussian
-f  = AnalogForecasting( 150, xt, catalog, neighborhood, regression, sampling)
-data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂_analog_local  = data_assimilation(yo, EnKS(500), progress = false)
+
+f  = AnalogForecasting( 100, xt, catalog, neighborhood, regression, sampling)
+
+DA = DataAssimilation( f, xt, ssm.sigma2_obs )
+@time x̂_analog_local  = forecast( DA, yo, EnKS(500), progress = false)
 RMSE(xt, x̂_analog_local)
 
 # ## Comparison between global and local analog data assimilation
