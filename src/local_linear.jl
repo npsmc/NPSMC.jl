@@ -1,4 +1,5 @@
-struct LocalLinear
+
+struct LocalLinear <: AbstractRegression
 
     k
     ivar
