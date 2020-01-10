@@ -73,8 +73,8 @@ u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 xt, yo, catalog = generate_data( ssm, u0 );
 
 # + {"nbpresent": {"id": "241f9ce2-fe11-4533-be8f-991a700f3920"}}
-plot( xt.t, vcat(xt.u'...)[:,1])
-scatter!( yo.t, vcat(yo.u'...)[:,1]; markersize=2)
+plot( xt.t, xt[1])
+scatter!( yo.t, yo[1]; markersize=2)
 # -
 
 regression = :local_linear
@@ -83,25 +83,25 @@ k, np = 100, 500
 
 # ### CLASSICAL DATA ASSIMILATION (dynamical model given by the catalog)
 
-data_assimilation = DataAssimilation( ssm, xt )
-x̂_classical = data_assimilation(yo, EnKS(np))
+DA = DataAssimilation( ssm, xt )
+x̂_classical = forecast(DA, yo, EnKS(np))
 @time RMSE( xt, x̂_classical)
 
 # ### ANALOG DATA ASSIMILATION (dynamical model given by the catalog)
 
 f  = AnalogForecasting( k, xt, catalog; regression = regression, sampling   = sampling )
-data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-x̂_analog = data_assimilation(yo, EnKS(np))
+DA = DataAssimilation( f, xt, ssm.sigma2_obs )
+x̂_analog = forecast( DA, yo, EnKS(np))
 @time RMSE( xt, x̂_analog)
 
 # + {"nbpresent": {"id": "7a6c203f-bcbb-4c52-8b85-7e6be3945044"}, "cell_type": "markdown"}
 # ### COMPARISON BETWEEN CLASSICAL AND ANALOG DATA ASSIMILATION
 
 # + {"nbpresent": {"id": "7a6c203f-bcbb-4c52-8b85-7e6be3945044"}}
-plot( xt.t, vcat(xt.u'...)[:,1], label="true state")
-plot!( xt.t, vcat(x̂_classical.u'...)[:,1], label="classical")
-plot!( xt.t, vcat(x̂_analog.u'...)[:,1], label="analog")
-scatter!( yo.t, vcat(yo.u'...)[:,1]; markersize=2, label="observations")
+plot( xt.t, xt[1], label="true state")
+plot!( xt.t, x̂_classical[1], label="classical")
+plot!( xt.t, x̂_analog[1], label="analog")
+scatter!( yo.t, yo[1]; markersize=2, label="observations")
 
 # + {"nbpresent": {"id": "971ff88b-e8dc-43dc-897e-71a7b6b659c0"}, "cell_type": "markdown"}
 # The results show that performances of the data-driven analog data assimilation are closed to those of the model-driven data assimilation. The error can be reduced by augmenting the size of the catalog "nb_loop_train".
