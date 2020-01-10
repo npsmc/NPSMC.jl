@@ -37,6 +37,6 @@ sinus3   = NPSMC.SSM(h, jac_h, mx, jac_mx, dt_int, dt_model, x0, var_obs, sig2_Q
 T        = 2000# length of the training
 X, Y     = generate_data( sinus3, x0, T)
 
-values = vcat(X.u'...)
+values = X[1]
 scatter( values, mx(values))
 scatter!(values[1:end-1], values[2:end], markersize=2)
