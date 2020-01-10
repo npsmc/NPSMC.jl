@@ -37,24 +37,24 @@ u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 );
 
-plot( xt.t, vcat(xt.u'...)[:,1])
-scatter!( yo.t, vcat(yo.u'...)[:,1]; markersize=2)
+plot( xt.t, xt[1])
+scatter!( yo.t, yo[1]; markersize=2)
 
 # ## Data assimilation with model forecasting
 
 np = 100
-data_assimilation = DataAssimilation( ssm, xt)
-@time x̂ = data_assimilation(yo, PF(np), progress = false);
+DA = DataAssimilation( ssm, xt)
+@time x̂ = forecast(DA, yo, PF(np), progress = false);
 println(RMSE(xt, x̂))
 
 # ## Plot the times series
 
-plot(xt.t, vcat(x̂.u'...)[:,1])
-scatter!(xt.t, vcat(xt.u'...)[:,1]; markersize=2)
-plot!(xt.t, vcat(x̂.u'...)[:,2])
-scatter!(xt.t, vcat(xt.u'...)[:,2]; markersize=2)
-plot!(xt.t, vcat(x̂.u'...)[:,3])
-scatter!(xt.t, vcat(xt.u'...)[:,3]; markersize=2)
+plot(xt.t, x̂[1])
+scatter!(xt.t, xt[1]; markersize=2)
+plot!(xt.t, x̂[2])
+scatter!(xt.t, xt[2]; markersize=2)
+plot!(xt.t, x̂[3])
+scatter!(xt.t, xt[3]; markersize=2)
 
 
 # ## Plot the phase-space plot
