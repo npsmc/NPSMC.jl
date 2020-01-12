@@ -51,7 +51,13 @@ function compute( ll :: LocalLinear, x, xf_tmp, xf_mean, ip, X, Y, w )
     mul!(ll.Cxx , (ll.Xr .* w'), ll.Xr')
     mul!(ll.Cxx2, (ll.Xr .* w'.^2), ll.Xr')
     mul!(ll.Cxy, (Y  .* w'), ll.Xr')
-    ll.Cxx .= pinv(ll.Cxx, rtol=0.01) 
+
+    try
+        ll.Cxx .= pinv(ll.Cxx, rtol=0.01) 
+    catch e
+        return 0
+    end
+
     ll.Cxx2 .= ll.Cxx2 * ll.Cxx
     # regression on principal components
     mul!(ll.beta, ll.Cxy, ll.Cxx) 
@@ -65,10 +71,6 @@ function compute( ll :: LocalLinear, x, xf_tmp, xf_mean, ip, X, Y, w )
     cov_xf  = (Y * (w .* Y')) ./ (1 .- tr(ll.Cxx2))
     cov_xf .= Symmetric(cov_xf .* (1 .+ tr(ll.Cxx2 * ll.X0r * ll.X0r' * ll.Cxx)))
 
-    if isposdef(cov_xf)
-        return PDMat(cov_xf)
-    else
-        return PDMat(ensure_pos_sym(cov_xf))
-    end
+    return cov_xf
 
 end
