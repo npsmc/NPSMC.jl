@@ -150,5 +150,5 @@ Ensure that matrix `M` is positive and symmetric to avoid numerical errors when 
 reference : [StateSpaceModels.jl](https://github.com/LAMPSPUC/StateSpaceModels.jl)
 """
 function ensure_pos_sym(M::Matrix{T}; ϵ::T = 1e-8) where T <: AbstractFloat
-    return (M + M')/2 + ϵ*I
+    return (M + M') ./ 2 + ϵ*I
 end
