@@ -1,10 +1,10 @@
-push!(LOAD_PATH,"../src/")
+push!(LOAD_PATH, "../src/")
 
 using DifferentialEquations
 using DelimitedFiles
 using Documenter
 using Literate
-using Plots 
+using Plots
 using NPSMC
 
 # generate examples
@@ -24,13 +24,12 @@ push!(examples, "lorenz63.jl")
 example_pages = Any[]
 
 for example in examples
-
     EXAMPLE = joinpath(@__DIR__, "..", "examples", example)
-    @show page = string("generated/", example[1:end-3],".md")
+    @show page = string("generated/", example[1:end-3], ".md")
 
     open(`head -n1 $EXAMPLE`) do io
-         title = join(readdlm(io)[3:end], " ")
-         push!(example_pages, title => page)
+        title = join(readdlm(io)[3:end], " ")
+        push!(example_pages, title => page)
     end
 
     Literate.markdown(EXAMPLE, OUTPUT)
@@ -40,32 +39,34 @@ end
 
 @show example_pages
 
-pages = Any["Home" => "index.md",
-            "Catalog" => "catalog.md",
-            "Data Assimilation" => "data_assimilation.md",
-            "State Space" => "state-space.md",
-            "Models" => "models.md",
-            "Ensemble Kalman filters" => "ensemble_kalman_filters.md",
-            "Ensemble Kalman smoothers" => "ensemble_kalman_smoothers.md",
-            "Forecasting" => "forecasting.md",
-            "Particle filters" => "particle_filters.md",
-            "Time Series" => "time-series.md",
-            "Utilities" => "utils.md",
-            "Examples" => example_pages,
-            "Some ideas" => "ideas.md" ]
+pages = Any[
+    "Home"=>"index.md",
+    "Catalog"=>"catalog.md",
+    "Data Assimilation"=>"data_assimilation.md",
+    "State Space"=>"state-space.md",
+    "Models"=>"models.md",
+    "Ensemble Kalman filters"=>"ensemble_kalman_filters.md",
+    "Ensemble Kalman smoothers"=>"ensemble_kalman_smoothers.md",
+    "Forecasting"=>"forecasting.md",
+    "Particle filters"=>"particle_filters.md",
+    "Time Series"=>"time-series.md",
+    "Utilities"=>"utils.md",
+    "Examples"=>example_pages,
+    "Some ideas"=>"ideas.md",
+]
 
 @show pages
 
 makedocs(
-    modules   = [NPSMC],
-    sitename  = "NPSMC.jl",
-    doctest   = true, 
-    authors   = "Pierre Navaro",
-    format    = Documenter.HTML(),
-    pages     = pages
+    modules = [NPSMC],
+    sitename = "NPSMC.jl",
+    doctest = true,
+    authors = "Pierre Navaro",
+    format = Documenter.HTML(),
+    pages = pages,
 )
 
 deploydocs(
-    deps   = Deps.pip("mkdocs", "python-markdown-math"),
-    repo   = "github.com/npsmc/NPSMC.jl.git",
+    deps = Deps.pip("mkdocs", "python-markdown-math"),
+    repo = "github.com/npsmc/NPSMC.jl.git",
 )

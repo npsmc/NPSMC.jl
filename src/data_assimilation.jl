@@ -15,34 +15,31 @@ parameters of the filtering method
 """
 struct DataAssimilation
 
-    xb     :: Vector{Float64}
-    B      :: Array{Float64, 2}
-    H      :: Array{Bool,    2}
-    R      :: Array{Float64, 2}
-    m      :: AbstractForecasting
+    xb::Vector{Float64}
+    B::Array{Float64,2}
+    H::Array{Bool,2}
+    R::Array{Float64,2}
+    m::AbstractForecasting
 
-    function DataAssimilation( m      :: AbstractForecasting,
-                               xt     :: TimeSeries,
-                               sigma2 :: Float64 )
-                
+    function DataAssimilation(m::AbstractForecasting, xt::TimeSeries, sigma2::Float64)
+
         xb = xt.u[1]
-        B  = 0.1 * Matrix(I, xt.nv, xt.nv)
-        H  = Matrix( I, xt.nv, xt.nv)
-        R  = sigma2 .* H
+        B = 0.1 * Matrix(I, xt.nv, xt.nv)
+        H = Matrix(I, xt.nv, xt.nv)
+        R = sigma2 .* H
 
-        new( xb, B, H, R, m )
+        new(xb, B, H, R, m)
 
     end
 
-    function DataAssimilation( m      :: StateSpaceModel,
-                               xt     :: TimeSeries )
-                
-        xb = xt.u[1]
-        B  = 0.1 * Matrix(I, xt.nv, xt.nv)
-        H  = Matrix( I, xt.nv, xt.nv)
-        R  = m.sigma2_obs .* H
+    function DataAssimilation(m::StateSpaceModel, xt::TimeSeries)
 
-        new( xb, B, H, R, m )
+        xb = xt.u[1]
+        B = 0.1 * Matrix(I, xt.nv, xt.nv)
+        H = Matrix(I, xt.nv, xt.nv)
+        R = m.sigma2_obs .* H
+
+        new(xb, B, H, R, m)
 
     end
 
