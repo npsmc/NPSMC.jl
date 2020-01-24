@@ -51,3 +51,4 @@ julia> include("notebooks/lorenz63.jl")
 - [EnKF.jl](https://github.com/mleprovost/EnKF.jl) Tools for data assimilation with Ensemble Kalman filter.
 - [StateSpaceRoutines.jl](https://github.com/FRBNY-DSGE/StateSpaceRoutines.jl) Package implementing common state-space routines.
 - [LowLevelParticleFilters.jl](https://github.com/baggepinnen/LowLevelParticleFilters.jl) Simple particle/kalman filtering, smoothing and parameter estimation.
+- [ParticleFilters.jl](https://github.com/JuliaPOMDP/ParticleFilters.jl)Simple particle filter implementation in Julia
