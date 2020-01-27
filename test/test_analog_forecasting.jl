@@ -59,7 +59,7 @@ for regression in [:local_linear, :locally_constant, :increment]
 end
 
 println()
-for column in ["regression", "sampling", "method", "RMSE", "time"]
+for column in ["REGRESSION", "SAMPLING", "METHOD", "RMSE", "TIME"]
     print(rpad(column, 20, " "),)
 end
 println()
