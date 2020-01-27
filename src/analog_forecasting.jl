@@ -158,9 +158,7 @@ function (forecasting::AnalogForecasting)(x::Array{Float64,2})
             # Gaussian sampling
             if forecasting.sampling == :gaussian
 
-                if isposdef(cov_xf)
-                    cov_xf = PDMat(cov_xf)
-                else
+                if !isposdef(cov_xf)
                     cov_xf = PDMat(ensure_pos_sym(cov_xf))
                 end
 
