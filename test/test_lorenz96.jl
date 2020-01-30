@@ -9,7 +9,7 @@ J = 40 :: Int64
 parameters = [F, J]
 dt_integration = 0.05
 dt_states = 1
-dt_obs = 5 
+dt_obs = 4 
 var_obs = randperm(rng, J)[1:20]
 nb_loop_train = 20 
 nb_loop_test = 5 
@@ -32,7 +32,7 @@ p = [F, J]
 prob  = ODEProblem(lorenz96, u0, tspan, p)
 sol = solve(prob, reltol=1e-6, saveat= dt_integration)
 
-#u0 = last(sol.u)
+u0 = last(sol.u)
 
 xt, yo, catalog = generate_data(ssm, u0);
 

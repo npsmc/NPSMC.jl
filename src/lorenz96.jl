@@ -51,6 +51,8 @@ x1 = [x[1] for x in sol.u]
 x20 = [x[20] for x in sol.u]
 x40 = [x[40] for x in sol.u]
 
+u0 = last(sol.u) 
+
 # run the data generation
 xt, yo, catalog = generate_data(ssm, u0);
 

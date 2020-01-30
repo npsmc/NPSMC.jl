@@ -138,11 +138,12 @@ function (forecasting::AnalogForecasting)(x::Array{Float64,2})
                 )
 
                 if cov_xf == 0 # error in pinv back to locally constant
+
                     xf_tmp[ivar, :] .= forecasting.catalog.successors[ivar, index_knn[ip]]
                     # weighted mean and covariance
                     xf_mean[ivar, ip] = sum(xf_tmp[ivar, :] .* weights[ip]', dims = 2)
                     Exf = xf_tmp[ivar, :] .- xf_mean[ivar, ip]
-                    cov_xf = Symmetric(1.0 ./ (1.0 .- sum(weights[ip] .^ 2)) .*
+                    cov_xf = Hermitian(1.0 ./ (1.0 .- sum(weights[ip] .^ 2)) .*
                                        (Exf .* weights[ip]') * Exf')
                 else
 
