@@ -54,35 +54,42 @@ using Plots, DifferentialEquations, NPSMC
 
 σ = 10.0
 ρ = 28.0
-β = 8.0/3
+β = 8.0 / 3
 
 dt_integration = 0.01
-dt_states      = 1 
-dt_obs         = 8 
-parameters     = [σ, ρ, β]
-var_obs        = [1]
-nb_loop_train  = 100 
-nb_loop_test   = 10
+dt_states = 1
+dt_obs = 8
+parameters = [σ, ρ, β]
+var_obs = [1]
+nb_loop_train = 100
+nb_loop_test = 10
 sigma2_catalog = 0.0
-sigma2_obs     = 2.0
+sigma2_obs = 2.0
 
-ssm = StateSpaceModel( lorenz63,
-                       dt_integration, dt_states, dt_obs, 
-                       parameters, var_obs,
-                       nb_loop_train, nb_loop_test,
-                       sigma2_catalog, sigma2_obs )
+ssm = StateSpaceModel(
+    lorenz63,
+    dt_integration,
+    dt_states,
+    dt_obs,
+    parameters,
+    var_obs,
+    nb_loop_train,
+    nb_loop_test,
+    sigma2_catalog,
+    sigma2_obs,
+)
 
 # - compute ``u_0`` to be in the attractor space
 
-u0    = [8.0;0.0;30.0]
-tspan = (0.0,5.0)
-prob  = ODEProblem(ssm.model, u0, tspan, parameters)
-u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
+u0 = [8.0; 0.0; 30.0]
+tspan = (0.0, 5.0)
+prob = ODEProblem(ssm.model, u0, tspan, parameters)
+u0 = last(solve(prob, reltol = 1e-6, save_everystep = false))
 
-xt, yo, catalog = generate_data( ssm, u0 );
+xt, yo, catalog = generate_data(ssm, u0);
 
-plot( xt.t, vcat(xt.u'...)[:,1])
-scatter!( yo.t, vcat(yo.u'...)[:,1]; markersize=2)
+plot(xt.t, vcat(xt.u'...)[:, 1])
+scatter!(yo.t, vcat(yo.u'...)[:, 1]; markersize = 2)
 
 # ## Classical data assimilation 
 
@@ -90,23 +97,23 @@ regression = :local_linear
 sampling = :gaussian
 k, np = 100, 500
 
-data_assimilation = DataAssimilation( ssm, xt )
-x̂_classical = data_assimilation(yo, EnKS(np), progress = false)
-@time RMSE( xt, x̂_classical)
+DA = DataAssimilation(ssm, xt)
+x̂_classical = forecast(DA, yo, EnKS(np), progress = false)
+@time RMSE(xt, x̂_classical)
 
 # ## Analog data assimilation
 
-f  = AnalogForecasting( k, xt, catalog; regression = regression, sampling = sampling )
-data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-x̂_analog = data_assimilation(yo, EnKS(np), progress = false)
-@time RMSE( xt, x̂_analog)
+f = AnalogForecasting(k, xt, catalog; regression = regression, sampling = sampling)
+DA = DataAssimilation(f, xt, ssm.sigma2_obs)
+x̂_analog = forecast(DA, yo, EnKS(np), progress = false)
+@time RMSE(xt, x̂_analog)
 
 # ## Comparison between classical and analog data assimilation
 
-plot( xt.t, vcat(xt.u'...)[:,1], label="true state")
-plot!( xt.t, vcat(x̂_classical.u'...)[:,1], label="classical")
-plot!( xt.t, vcat(x̂_analog.u'...)[:,1], label="analog")
-scatter!( yo.t, vcat(yo.u'...)[:,1]; markersize=2, label="observations")
+plot(xt.t, xt[1], label = "true state")
+plot!(xt.t, x̂_classical[1], label = "classical")
+plot!(xt.t, x̂_analog[1], label = "analog")
+scatter!(yo.t, yo[1]; markersize = 2, label = "observations")
 
 # The results show that performances of the data-driven analog data
 # assimilation are closed to those of the model-driven data assimilation.

@@ -8,8 +8,8 @@ export RMSE
 Compute the Root Mean Square Error between 2 n-dimensional vectors.
 """
 function RMSE(a, b)
- 
-    sqrt(mean((vcat(a.u'...) .- vcat(b.u'...)).^2))
+
+    sqrt(mean((vcat(a.u'...) .- vcat(b.u'...)) .^ 2))
 
 end
 
@@ -18,7 +18,7 @@ end
 
 Normalize the entries of a multidimensional array sum to 1.
 """
-function normalise!( w )
+function normalise!(w)
 
     c = sum(w)
     # Set any zeros to one before dividing
@@ -33,13 +33,13 @@ end
 Ensure the matrix is stochastic, i.e., 
 the sum over the last dimension is 1.
 """
-function mk_stochastic!(w :: Array{Float64,2})
+function mk_stochastic!(w::Array{Float64,2})
 
     if first(size(w)) == 1
         normalise!(w)
     else
         # Copy the normaliser plane for each i.
-        normaliser = sum(w, dims=2)
+        normaliser = sum(w, dims = 2)
         # Set zeros to 1 before dividing
         # This is valid since normaliser(i) = 0 iff T(i) = 0
         normaliser .+= normaliser .== 0
@@ -57,10 +57,10 @@ function sample_discrete(prob, r, c)
 
     # this speedup is due to Peter Acklam
     cumprob = cumsum(prob)
-    R = rand(r,c)
-    M = zeros(Int64,(r,c))
+    R = rand(r, c)
+    M = zeros(Int64, (r, c))
     N = length(cumprob)
-    for i in 1:N-1
+    for i = 1:N-1
         M .+= R .> cumprob[i]
     end
     M
@@ -74,25 +74,25 @@ end
 SVD decomposition of Matrix. 
 """
 function inv_using_SVD(Mat, eigvalMax)
-    
+
     F = svd(Mat; full = true)
     eigval = cumsum(F.S) ./ sum(F.S)
     # search the optimal number of eigen values
     icut = findfirst(eigval .>= eigvalMax)
 
-    U_1 = @view F.U[1:icut,1:icut]
-    V_1 = @view F.Vt'[1:icut,1:icut]
+    U_1 = @view F.U[1:icut, 1:icut]
+    V_1 = @view F.Vt'[1:icut, 1:icut]
     tmp1 = (V_1 ./ F.S[1:icut]') * U_1'
 
-    if icut+1 > length(eigval)
-       tmp1
+    if icut + 1 > length(eigval)
+        tmp1
     else
-       U_3 = @view F.U[icut+1:end,1:icut]
-       V_3 = @view F.Vt'[icut+1:end,1:icut]
-       tmp2 = (V_1 ./ F.S[1:icut]') * U_3'
-       tmp3 = (V_3 ./ F.S[1:icut]') * U_1'
-       tmp4 = (V_3 ./ F.S[1:icut]') * U_3'
-       vcat(hcat(tmp1,tmp2),hcat(tmp3,tmp4))
+        U_3 = @view F.U[icut+1:end, 1:icut]
+        V_3 = @view F.Vt'[icut+1:end, 1:icut]
+        tmp2 = (V_1 ./ F.S[1:icut]') * U_3'
+        tmp3 = (V_3 ./ F.S[1:icut]') * U_1'
+        tmp4 = (V_3 ./ F.S[1:icut]') * U_3'
+        vcat(hcat(tmp1, tmp2), hcat(tmp3, tmp4))
     end
 
 end
@@ -102,7 +102,7 @@ end
 
 Multinomial resampler. 
 """
-function resample_multinomial( w :: Vector{Float64} )
+function resample_multinomial(w::Vector{Float64})
 
     m = length(w)
     q = cumsum(w)
@@ -113,10 +113,10 @@ function resample_multinomial( w :: Vector{Float64} )
         sampl = rand()
         j = 1
         while q[j] < sampl
-            j = j+1
+            j = j + 1
         end
         push!(indx, j)
-        i = i+1
+        i = i + 1
     end
     indx
 end
@@ -126,7 +126,7 @@ end
 
 Multinomial resampler.
 """
-function resample!( indx :: Vector{Int64}, w :: Vector{Float64} )
+function resample!(indx::Vector{Int64}, w::Vector{Float64})
 
     m = length(w)
     q = cumsum(w)
@@ -135,10 +135,10 @@ function resample!( indx :: Vector{Int64}, w :: Vector{Float64} )
         sampl = rand()
         j = 1
         while q[j] < sampl
-            j = j+1
+            j = j + 1
         end
         indx[i] = j
-        i = i+1
+        i = i + 1
     end
 end
 
@@ -149,6 +149,6 @@ Ensure that matrix `M` is positive and symmetric to avoid numerical errors when 
 
 reference : [StateSpaceModels.jl](https://github.com/LAMPSPUC/StateSpaceModels.jl)
 """
-function ensure_pos_sym(M::Matrix{T}; ϵ::T = 1e-8) where T <: AbstractFloat
-    return (M + M')/2 + ϵ*I
+function ensure_pos_sym(M::Matrix{T}; ϵ::T = 1e-8) where {T<:AbstractFloat}
+    return (M + M') ./ 2 + ϵ * I
 end

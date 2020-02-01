@@ -28,11 +28,9 @@ nb_loop_test   = 10
 sigma2_catalog = 0.0
 sigma2_obs     = 2.0
 
-ssm = StateSpaceModel( lorenz63,
-                       dt_integration, dt_states, dt_obs, 
+ssm = StateSpaceModel( lorenz63, dt_integration, dt_states, dt_obs, 
                        parameters, var_obs,
-                       nb_loop_train, nb_loop_test,
-                       sigma2_catalog, sigma2_obs )
+                       nb_loop_train, nb_loop_test, sigma2_catalog, sigma2_obs )
 
 # compute u0 to be in the attractor space
 u0    = [8.0;0.0;30.0]
@@ -42,20 +40,36 @@ u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 xt, yo, catalog = generate_data( ssm, u0 )
 
+results = []
 for regression in [:local_linear, :locally_constant, :increment]
     for sampling in [:gaussian, :multinomial]
         f  = AnalogForecasting( 50, xt, catalog; 
                                 regression = regression,
                                 sampling   = sampling )
-        for method in [EnKS(100), EnKF(100), PF(1000)]
-            println( " $regression, $sampling, $method ")
-            data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-            @time x̂  = data_assimilation(yo, method)
+        for method in [EnKS(100), EnKF(100), PF(100)]
+            println(" $regression, $sampling, $method ")
+            DA = DataAssimilation( f, xt, ssm.sigma2_obs )
+            time = @elapsed x̂  = forecast(DA, yo, method)
             rmse = RMSE(xt, x̂) 
-            println( " rmse = $rmse ")
-            @test rmse < 3.0
+            push!(results, (regression, sampling, method, 
+                            round(rmse,digits=3), round(time,digits=1)))
+            @test rmse < 2.0
         end
     end
+end
+
+println()
+for column in ["REGRESSION", "SAMPLING", "METHOD", "RMSE", "TIME"]
+    print(rpad(column, 20, " "),)
+end
+println()
+for res in sort(results, by=v -> v[4])
+
+   for r in res 
+      print(rpad(r, 20, " "))
+   end
+   println()
+
 end
 
 end

@@ -46,8 +46,9 @@ julia> include("notebooks/lorenz63.jl")
 
 ## See also
 
- - [DataAssim.jl](https://github.com/Alexander-Barth/DataAssim.jl), Implementation of various ensemble Kalman Filter data assimilation methods in Julia.
- - [StateSpaceModels.jl](https://github.com/LAMPSPUC/StateSpaceModels.jl), a Julia package for time-series analysis using state-space models.
-- [EnKF.jl](https://github.com/mleprovost/EnKF.jl) Tools for data assimilation with Ensemble Kalman filter.
-- [StateSpaceRoutines.jl](https://github.com/FRBNY-DSGE/StateSpaceRoutines.jl) Package implementing common state-space routines.
-- [LowLevelParticleFilters.jl](https://github.com/baggepinnen/LowLevelParticleFilters.jl) Simple particle/kalman filtering, smoothing and parameter estimation.
+ - [DataAssim.jl](https://github.com/Alexander-Barth/DataAssim.jl): Implementation of various ensemble Kalman Filter data assimilation methods in Julia.
+ - [StateSpaceModels.jl](https://github.com/LAMPSPUC/StateSpaceModels.jl): Julia package for time-series analysis using state-space models.
+- [EnKF.jl](https://github.com/mleprovost/EnKF.jl): Tools for data assimilation with Ensemble Kalman filter.
+- [StateSpaceRoutines.jl](https://github.com/FRBNY-DSGE/StateSpaceRoutines.jl): Package implementing common state-space routines.
+- [LowLevelParticleFilters.jl](https://github.com/baggepinnen/LowLevelParticleFilters.jl): Simple particle/kalman filtering, smoothing and parameter estimation.
+- [ParticleFilters.jl](https://github.com/JuliaPOMDP/ParticleFilters.jl): Simple particle filter implementation in Julia

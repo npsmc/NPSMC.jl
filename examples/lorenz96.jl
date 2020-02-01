@@ -15,7 +15,7 @@ using NPSMC
 
 rng = MersenneTwister(123)
 F = 8
-J = 40 :: Int64
+J = 40::Int64
 parameters = [F, J]
 dt_integration = 0.05 # integration time
 dt_states = 1 # number of integration times between consecutive states (for xt and catalog)
@@ -23,25 +23,32 @@ dt_obs = 4 # number of integration times between consecutive observations (for y
 var_obs = randperm(rng, J)[1:20] # indices of the observed variables
 nb_loop_train = 100 # size of the catalog
 nb_loop_test = 10 # size of the true state and noisy observations
-sigma2_catalog = 0.   # variance of the model error to generate the catalog   
-sigma2_obs = 2. # variance of the observation error to generate observations
+sigma2_catalog = 0.0   # variance of the model error to generate the catalog   
+sigma2_obs = 2.0 # variance of the observation error to generate observations
 
-ssm = StateSpaceModel( lorenz96, 
-                       dt_integration, dt_states, dt_obs, 
-                       parameters, var_obs,
-                       nb_loop_train, nb_loop_test,
-                       sigma2_catalog, sigma2_obs )
+ssm = StateSpaceModel(
+    lorenz96,
+    dt_integration,
+    dt_states,
+    dt_obs,
+    parameters,
+    var_obs,
+    nb_loop_train,
+    nb_loop_test,
+    sigma2_catalog,
+    sigma2_obs,
+)
 
 # 5 time steps (to be in the attractor space)
 
 u0 = F .* ones(Float64, J)
 u0[J÷2] = u0[J÷2] + 0.01
 
-tspan = (0.0,5.0)
+tspan = (0.0, 5.0)
 p = [F, J]
-prob  = ODEProblem(lorenz96, u0, tspan, p)
-sol = solve(prob, reltol=1e-6, saveat= dt_integration)
-x1  = [x[1] for x in sol.u]
+prob = ODEProblem(lorenz96, u0, tspan, p)
+sol = solve(prob, reltol = 1e-6, saveat = dt_integration)
+x1 = [x[1] for x in sol.u]
 x20 = [x[20] for x in sol.u]
 x40 = [x[40] for x in sol.u]
 plot(sol.t, x1)
@@ -54,19 +61,19 @@ xt, yo, catalog = generate_data(ssm, u0);
 
 # ## Plot state, observations and catalog
 
-plot(xt.t,  vcat(xt.u'...)[:,1], line=(:solid,:red), label="x1")
-scatter!(yo.t, vcat(yo.u'...)[:,1], markersize=2)
-plot!(xt.t, vcat(xt.u'...)[:,20],line=(:solid,:blue), label="x20")
-scatter!(yo.t, vcat(yo.u'...)[:,20],markersize=2)
-plot!(xt.t, vcat(xt.u'...)[:,40],line=(:solid,:green), label="x40")
-scatter!(yo.t, vcat(yo.u'...)[:,40],markersize=2)
+plot(xt.t, xt[1], line = (:solid, :red), label = "x1")
+scatter!(yo.t, yo[1], markersize = 2)
+plot!(xt.t, xt[20], line = (:solid, :blue), label = "x20")
+scatter!(yo.t, yo[20], markersize = 2)
+plot!(xt.t, xt[40], line = (:solid, :green), label = "x40")
+scatter!(yo.t, yo[40], markersize = 2)
 xlabel!("Lorenz-96 times")
 title!("Lorenz-96 true (continuous lines) and observed trajectories (dots)")
 
 # ## Model data assimilation (with the global analogs)
 
-data_assimilation = DataAssimilation( ssm, xt )
-@time x̂_classical_global  = data_assimilation(yo, EnKS(500), progress = false);
+DA = DataAssimilation(ssm, xt)
+@time x̂_classical_global = forecast(DA, yo, EnKS(500), progress = false);
 
 # - RMSE
 
@@ -74,16 +81,18 @@ RMSE(xt, x̂_classical_global)
 
 # - Set the local analog matrix
 
-local_analog_matrix =  BitArray{2}(diagm( -2  => trues(xt.nv-2),
-             -1  => trues(xt.nv-1),
-              0  => trues(xt.nv),
-              1  => trues(xt.nv-1),
-              2  => trues(xt.nv-2),             
-             J-2 => trues(xt.nv-(J-2)),
-             J-1 => trues(xt.nv-(J-1)))
-    + transpose(diagm( J-2 => trues(xt.nv-(J-2)),
-             J-1 => trues(xt.nv-(J-1))))
-    );
+local_analog_matrix = BitArray{2}(diagm(
+    -2 => trues(xt.nv - 2),
+    -1 => trues(xt.nv - 1),
+    0 => trues(xt.nv),
+    1 => trues(xt.nv - 1),
+    2 => trues(xt.nv - 2),
+    J - 2 => trues(xt.nv - (J - 2)),
+    J - 1 => trues(xt.nv - (J - 1)),
+) + transpose(diagm(
+    J - 2 => trues(xt.nv - (J - 2)),
+    J - 1 => trues(xt.nv - (J - 1)),
+)));
 
 spy(sparse(local_analog_matrix))
 
@@ -97,28 +106,35 @@ spy(sparse(local_analog_matrix))
 
 # ## Analog data assimilation (with the global analogs)
 
-f  = AnalogForecasting( 120, xt, catalog, 
-    regression = :local_linear, sampling = :gaussian)
+f = AnalogForecasting(
+    100,
+    xt,
+    catalog,
+    regression = :locally_constant,
+    sampling = :gaussian,
+)
 
-data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
+DA = DataAssimilation(f, xt, ssm.sigma2_obs)
 
-@time x̂_analog_global  = data_assimilation(yo, EnKS(500), progress = false)
+@time x̂_analog_global = forecast(DA, yo, EnKS(500), progress = false)
 RMSE(xt, x̂_analog_global)
 
 # ## Analog data assimilation (with the local analogs)
 
 neighborhood = local_analog_matrix
 regression = :local_linear
-sampling   = :gaussian
-f  = AnalogForecasting( 150, xt, catalog, neighborhood, regression, sampling)
-data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂_analog_local  = data_assimilation(yo, EnKS(500), progress = false)
+sampling = :gaussian
+
+f = AnalogForecasting(100, xt, catalog, neighborhood, regression, sampling)
+
+DA = DataAssimilation(f, xt, ssm.sigma2_obs)
+@time x̂_analog_local = forecast(DA, yo, EnKS(500), progress = false)
 RMSE(xt, x̂_analog_local)
 
 # ## Comparison between global and local analog data assimilation
 
 import PyPlot
-fig = PyPlot.figure(figsize=(10,10))
+fig = PyPlot.figure(figsize = (10, 10))
 
 PyPlot.subplot(221)
 PyPlot.pcolormesh(hcat(xt.u...))
