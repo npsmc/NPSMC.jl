@@ -23,7 +23,7 @@ dt_states      = 1
 dt_obs         = 8 
 parameters     = [σ, ρ, β]
 var_obs        = [1]
-nb_loop_train  = 10^2 
+nb_loop_train  = 10^2
 nb_loop_test   = 10
 sigma2_catalog = 0.0
 sigma2_obs     = 2.0
@@ -47,7 +47,7 @@ for regression in [:local_linear, :locally_constant, :increment]
         f  = AnalogForecasting( 50, xt, catalog; 
                                 regression = regression,
                                 sampling   = sampling )
-        for method in [EnKS(100), EnKF(100), PF(100)]
+        for method in [EnKS(100), EnKF(100), PF(1000)]
             println( " $regression, $sampling, $method ")
             data_assimilation = DataAssimilation( f, xt, ssm.sigma2_obs )
             @time x̂  = data_assimilation(yo, method)
