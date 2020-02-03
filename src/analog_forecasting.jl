@@ -143,7 +143,7 @@ function (forecasting::AnalogForecasting)(x::Array{Float64,2})
                     # weighted mean and covariance
                     xf_mean[ivar, ip] = sum(xf_tmp[ivar, :] .* weights[ip]', dims = 2)
                     Exf = xf_tmp[ivar, :] .- xf_mean[ivar, ip]
-                    cov_xf = Hermitian(1.0 ./ (1.0 .- sum(weights[ip] .^ 2)) .*
+                    cov_xf = Symmetric(1.0 ./ (1.0 .- sum(weights[ip] .^ 2)) .*
                                        (Exf .* weights[ip]') * Exf')
                 else
 
