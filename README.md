@@ -52,3 +52,4 @@ julia> include("notebooks/lorenz63.jl")
 - [StateSpaceRoutines.jl](https://github.com/FRBNY-DSGE/StateSpaceRoutines.jl): Package implementing common state-space routines.
 - [LowLevelParticleFilters.jl](https://github.com/baggepinnen/LowLevelParticleFilters.jl): Simple particle/kalman filtering, smoothing and parameter estimation.
 - [ParticleFilters.jl](https://github.com/JuliaPOMDP/ParticleFilters.jl): Simple particle filter implementation in Julia
+- [MiniKalman.jl](https://github.com/cstjean/MiniKalman.jl):  Kalman Filtering package
