@@ -159,8 +159,10 @@ function (forecasting::AnalogForecasting)(x::Array{Float64,2})
             # Gaussian sampling
             if forecasting.sampling == :gaussian
 
-                if !isposdef(cov_xf)
-                    cov_xf = PDMat(ensure_pos_sym(cov_xf))
+                ϵ = 1e-8
+                while !isposdef(cov_xf)
+                    cov_xf .= ensure_pos_sym(cov_xf, ϵ = ϵ)
+                    ϵ *= 10
                 end
 
                 # random sampling from the multivariate Gaussian distribution
