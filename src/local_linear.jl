@@ -51,9 +51,11 @@ function compute(ll::LocalLinear, x, xf_tmp, xf_mean, ip, X, Y, w)
     mul!(ll.Cxx2, (ll.Xr .* w' .^ 2), ll.Xr')
     mul!(ll.Cxy, (Y .* w'), ll.Xr')
 
-    U, S, V = psvd(ll.Cxx, rtol = 0.01)
-    ll.Cxx .= V * diagm(1 ./ S) * U'
+    if any(isnan.(ll.Cxx)) throw(" Some nan values in Cxx ") end
 
+    U, S, V = psvd(ll.Cxx, rtol = 0.01)
+
+    ll.Cxx .= V * diagm(1 ./ S) * U'
     ll.Cxx2 .= ll.Cxx2 * ll.Cxx
     # regression on principal components
     mul!(ll.beta, ll.Cxy, ll.Cxx)
