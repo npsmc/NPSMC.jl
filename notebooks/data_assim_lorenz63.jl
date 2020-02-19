@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import Pkg; Pkg.add("DataAssim")
-
 using DataAssim, Plots, Random, LinearAlgebra, Statistics
 using DifferentialEquations
 
