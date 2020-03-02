@@ -11,8 +11,8 @@ dt_integration = 0.05
 dt_states = 1
 dt_obs = 4 
 var_obs = randperm(rng, J)[1:20]
-nb_loop_train = 100 
-nb_loop_test = 10 
+nb_loop_train = 20 
+nb_loop_test = 5 
 sigma2_catalog = 0. 
 sigma2_obs = 2. 
 
