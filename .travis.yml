@@ -10,7 +10,8 @@ julia:
 notifications:
   email: true
 
-install: julia -e 'using Pkg; Pkg.add("Distributions"); @time using Distributions'
+script:
+  - julia --project --compile-cache=no -e 'import Pkg; Pkg.build(); Pkg.test("NPSMC"; coverage=true)'
 
 after_success:
   - julia -e 'using Pkg; cd(Pkg.dir("NPSMC")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())';
