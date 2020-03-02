@@ -1,4 +1,3 @@
-using LowRankApprox
 struct LocalLinear <: AbstractRegression
 
     k
