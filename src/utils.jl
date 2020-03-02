@@ -152,3 +152,7 @@ reference : [StateSpaceModels.jl](https://github.com/LAMPSPUC/StateSpaceModels.j
 function ensure_pos_sym(M::Matrix{T}; ϵ::T = 1e-8) where {T<:AbstractFloat}
     return (M + M') ./ 2 + ϵ * I
 end
+
+function ensure_pos_sym!(M::Matrix{T}; ϵ::T = 1e-8) where {T<:AbstractFloat}
+    M .= (M + M') ./ 2 + ϵ * I
+end

@@ -11,8 +11,8 @@ dt_integration = 0.05
 dt_states = 1
 dt_obs = 4 
 var_obs = randperm(rng, J)[1:20]
-nb_loop_train = 20 
-nb_loop_test = 5 
+nb_loop_train = 100 
+nb_loop_test = 10 
 sigma2_catalog = 0. 
 sigma2_obs = 2. 
 
@@ -36,7 +36,6 @@ u0 = last(sol.u)
 
 xt, yo, catalog = generate_data(ssm, u0);
 
-
 local_analog_matrix =  BitArray{2}(diagm( -2  => trues(xt.nv-2),
              -1  => trues(xt.nv-1),
               0  => trues(xt.nv),
@@ -52,19 +51,43 @@ neighborhood = local_analog_matrix
 regression = :local_linear
 sampling   = :gaussian
 
-f  = AnalogForecasting( 100, xt, catalog, neighborhood, regression, sampling)
-DA = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂ = forecast( DA, yo, EnKS(500), progress = true)
-println("RMSE(local  analog  DA) = $(RMSE(xt,x̂))")
+@testset "Global analog with local linear regression " begin
 
-f  = AnalogForecasting( 100, xt, catalog, regression = regression, sampling = sampling)
-DA = DataAssimilation( f, xt, ssm.sigma2_obs )
-@time x̂ = forecast( DA, yo, EnKS(500), progress = true)
-println("RMSE(global analog  DA) = $(RMSE(xt,x̂))")
+    f  = AnalogForecasting( 100, xt, catalog, regression = regression, sampling = sampling)
+    DA = DataAssimilation( f, xt, ssm.sigma2_obs )
+    @time x̂ = forecast( DA, yo, EnKS(500), progress = true)
+    rmse = RMSE(xt,x̂)
+    println("RMSE(global analog  DA) = $rmse ")
 
-DA = DataAssimilation( ssm, xt )
-x̂  = forecast(DA, yo, EnKS(500), progress = true);
-println("RMSE(global classic DA) = $(RMSE(xt,x̂))")
+    @test rmse < 5.0
+
+end
+
+
+@testset "Global analog with classic computation " begin
+
+    DA = DataAssimilation( ssm, xt )
+    @time x̂  = forecast(DA, yo, EnKS(500), progress = true);
+    rmse = RMSE(xt,x̂)
+    println("RMSE(global classic DA) = $rmse ")
+    
+    @test rmse < 1.0
+
+end
+
+@testset "Local analog with local linear regression " begin
+
+    f  = AnalogForecasting( 100, xt, catalog, neighborhood, regression, sampling)
+    DA = DataAssimilation( f, xt, ssm.sigma2_obs )
+    @time x̂ = forecast( DA, yo, EnKS(500), progress = true)
+    rmse = RMSE(xt,x̂)
+    println("RMSE(local analog DA) = $rmse ")
+
+    @test rmse < 5.0
+
+end
+
+
 
 @test true
 

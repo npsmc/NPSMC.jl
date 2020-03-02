@@ -72,8 +72,11 @@ function (forecasting::AnalogForecasting)(x::Array{Float64,2})
 
     # global analog forecasting
     index_knn, dist_knn = knn(forecasting.kdt, x, forecasting.k)
+
     # parameter of normalization for the kernels
     λ = median(Iterators.flatten(dist_knn))
+    @assert λ > 0.
+    weights = [ ones(forecasting.k) for i in 1:np]
 
     while condition
 
@@ -86,9 +89,23 @@ function (forecasting::AnalogForecasting)(x::Array{Float64,2})
         end
 
         # compute weights
-        weights = [exp.(-dist .^ 2 ./ λ) for dist in dist_knn]
-        for (ip, w) in enumerate(weights)
-            weights[ip] .= w ./ sum(w)
+        for ip in 1:np
+            for k in 1:forecasting.k
+                weights[ip][k] = exp(-dist_knn[ip][k]^2 / λ^2)
+            end
+            s = sum(weights[ip])
+            for k in 1:forecasting.k
+                weights[ip][k] /= s
+            end
+
+            if any(isnan.(weights[ip])) 
+                @show ip
+                @show λ
+                @show dist_knn[ip]
+                @show weights[ip]
+                throw(" Some nan values in weights ")
+            end
+
         end
 
         # initialization
