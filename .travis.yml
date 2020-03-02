@@ -11,7 +11,7 @@ notifications:
   email: true
 
 script:
-  - julia --project --compile-cache=no -e 'import Pkg; Pkg.build(); Pkg.test("NPSMC"; coverage=true)'
+  - julia --project --compiled-modules=no -e 'import Pkg; Pkg.build(); Pkg.test("NPSMC"; coverage=true)'
 
 after_success:
   - julia -e 'using Pkg; cd(Pkg.dir("NPSMC")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())';
