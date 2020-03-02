@@ -10,7 +10,7 @@ julia:
 notifications:
   email: true
 
-install: travis_wait 20 julia --project -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+install: travis_wait 20 julia --project -e 'using Pkg; Pkg.instantiate()'
 
 after_success:
   - julia -e 'using Pkg; cd(Pkg.dir("NPSMC")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())';
