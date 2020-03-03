@@ -1,4 +1,5 @@
 push!(LOAD_PATH, "../src/")
+ENV["GKSwstype"]="100"
 
 using DifferentialEquations
 using DelimitedFiles
@@ -18,7 +19,7 @@ push!(examples, "catalog.jl")
 push!(examples, "model_forecasting.jl")
 push!(examples, "analog_forecasting.jl")
 push!(examples, "lorenz63.jl")
-#push!(examples, "lorenz96.jl")
+push!(examples, "lorenz96.jl")
 #push!(examples, "monte_carlo.jl")
 
 example_pages = Any[]
