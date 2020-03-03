@@ -8,16 +8,12 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.1
+#       jupytext_version: 1.3.3
 #   kernelspec:
-#     display_name: Julia 1.3.0
+#     display_name: Julia 1.3.1
 #     language: julia
 #     name: julia-1.3
 # ---
-
-using Pkg
-Pkg.update()
-Pkg.add("")
 
 # + [markdown] {"nbpresent": {"id": "76428090-b279-4d85-b5bc-e0fdefafc294"}}
 # # Problem
@@ -79,6 +75,7 @@ sol = solve(prob, reltol=1e-6, saveat= dt_integration)
 x1  = getindex.(sol.u, 1)
 x20 = getindex.(sol.u, 20)
 x40 = getindex.(sol.u, 40)
+u0 = last(sol.u);
 plot(sol.t, [x1 x20 x40], labels=[:x1 :x20 :x40])
 # -
 
@@ -124,6 +121,8 @@ heatmap(local_analog_matrix)
 
 # ### ANALOG DATA ASSIMILATION (with the global analogs)
 
+regression = :local_linear
+sampling = :gaussian
 f  = AnalogForecasting( 100, xt, catalog, regression=regression, sampling=sampling)
 DA_global = DataAssimilation( f, xt, ssm.sigma2_obs )
 @time x̂_analog_global  = forecast(DA_global, yo, EnKS(500))
@@ -183,5 +182,3 @@ println("RMSE(local analog DA)  = $(RMSE(xt,x̂_analog_local))")
 # # Remark
 #
 # Note that for all the previous experiments, we use the robust Ensemble Kalman Smoother (EnKS) with the increment or local linear regressions and the Gaussian sampling. If you want to have realistic state estimations, we preconize the use of the Particle Filter (DA.method = 'PF') with the locally constant regression (AF.regression = 'locally_constant') and the multinomial sampler (AF.sampling = 'multinomial') with a large number of particles (DA.N). For more details about the different options, see the attached publication: Lguensat, R., Tandeo, P., Ailliot, P., Pulido, M., & Fablet, R. (2017). The Analog Data Assimilation. *Monthly Weather Review*, 145(10), 4093-4107.
-# -
-
