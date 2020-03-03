@@ -9,40 +9,37 @@
 [![Build Status](https://travis-ci.org/npsmc/NPSMC.jl.svg?branch=master)](https://travis-ci.org/npsmc/NPSMC.jl)
 [![codecov](https://codecov.io/gh/npsmc/NPSMC.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/npsmc/NPSMC.jl)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://npsmc.github.io/NPSMC.jl/dev)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/npsmc/NPSMC.jl/master?filepath=https%3A%2F%2Fgithub.com%2Fnpsmc%2FNPSMC.jl%2Fnotebooks)
 
-Non parametric sequential Monte-Carlo methods
+**N**on **P**arametric **S**equential **M**onte-**C**arlo methods
 
+This package is derived from the [¡AnDA!](https://github.com/ptandeo/anda) 
+and [¡CEDA!](https://github.com/ptandeo/CEDA) Python libraries written by @ptandeo.  
+These programs are attached to the following publications:
 
-This package is derived from the [¡AnDA! Python library](https://github.com/ptandeo/anda) 
-written by [Pierre Tandeo](pierre.tandeo@imt-atlantique.fr).  This Python library is attached to
-the following publication
-(http://journals.ametsoc.org/doi/abs/10.1175/MWR-D-16-0441.1): Lguensat, R.,
+- (http://journals.ametsoc.org/doi/abs/10.1175/MWR-D-16-0441.1): Lguensat, R.,
 Tandeo, P., Ailliot, P., Pulido, M., & Fablet, R. (2017). The Analog Data
 Assimilation. *Monthly Weather Review*, 145(10), 4093-4107.
 
+- (http://onlinelibrary.wiley.com/doi/10.1002/qj.3048/full): Dreano, D., Tandeo, P., Pulido, M., Ait‐El‐Fquih, B., Chonavel, T., & Hoteit, I. (2017). Estimating Model‐Error Covariances in Nonlinear State‐Space Models using Kalman Smoothing and the Expectation–Maximization Algorithm. *Quarterly Journal of the Royal Meteorological Society*, 143(705), 1877-1885.
+
+
 ## Installing NPSMC
 
-In a Julia session switch to `pkg>` mode to add `NPSMC`:
-
-```julia
-julia>] # switch to pkg> mode
-pkg> add https://github.com/npsmc/NPSMC.jl
+```bash
+git clone https://github.com/npsmc/NPSMC.jl
+cd NPSMC.jl
+julia --project
 ```
-
-Alternatively, you can achieve the above using the `Pkg` API:
 
 ```julia
 julia> using Pkg
-julia> pkg"add https://github.com/npsmc/NPSMC.jl"
+julia> Pkg.instantiate()
+julia> using IJulia
+julia> notebook(dir=joinpath(pwd(),"notebooks"))
+[ Info: running ...
 ```
 
-When finished, make sure that you're back to the Julian prompt (`julia>`)
-and bring `NPSMC` into scope:
-
-```julia
-julia> using NPSMC
-julia> include("notebooks/lorenz63.jl")
-```
 
 ## See also
 

@@ -12,9 +12,13 @@ struct EnKF <: MonteCarloMethod
 end
 
 
-
 """ 
-    data_assimilation( yo, da)
+    forecast( da, yo, mc; progress=true)
+
+- da: DataAssimilation
+- yo: Observations
+- mc: Monte Carlo method
+- progress: display the progress bar.
 
 Apply stochastic and sequential data assimilation technics using 
 model forecasting or analog forecasting. 
@@ -42,15 +46,14 @@ function forecast(da::DataAssimilation, yo::TimeSeries, mc::EnKF; progress = tru
     end
 
     for k = 1:nt
-        if progress
-            next!(p)
-        end
+
+        if progress next!(p) end
 
         # update step (compute forecasts)            
         if k == 1
             xf .= rand(MvNormal(da.xb, da.B), np)
         else
-            xf, xf_mean = da.m(part[k-1])
+            xf, xf_mean = da.m(part[k-1])  
             m_xa_part[k] .= xf_mean
         end
 

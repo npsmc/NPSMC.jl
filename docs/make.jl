@@ -25,7 +25,7 @@ push!(examples, "lorenz96.jl")
 example_pages = Any[]
 
 for example in examples
-    EXAMPLE = joinpath(@__DIR__, "..", "examples", example)
+    EXAMPLE = joinpath(@__DIR__, "examples", example)
     @show page = string("generated/", example[1:end-3], ".md")
 
     open(`head -n1 $EXAMPLE`) do io
