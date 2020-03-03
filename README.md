@@ -14,8 +14,8 @@
 **N**on **P**arametric **S**equential **M**onte-**C**arlo methods
 
 This package is derived from the [¡AnDA!](https://github.com/ptandeo/anda) 
-and [¡CEDA!] Python libraries written by [Pierre Tandeo](pierre.tandeo@imt-atlantique.fr).  
-This Python library are attached to the following publications:
+and [¡CEDA!](https://github.com/ptandeo/CEDA) Python libraries written by @ptandeo.  
+These programs are attached to the following publications:
 
 - (http://journals.ametsoc.org/doi/abs/10.1175/MWR-D-16-0441.1): Lguensat, R.,
 Tandeo, P., Ailliot, P., Pulido, M., & Fablet, R. (2017). The Analog Data
