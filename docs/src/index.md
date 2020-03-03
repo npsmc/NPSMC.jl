@@ -2,4 +2,12 @@
 
 Documentation for NPSMC.jl
 
+# Contents
 
+```@contents
+```
+
+## Index
+
+```@index
+```

@@ -8,10 +8,10 @@
 # related following a nonlinear state-space model: 
 # 
 # ```math
-# \\begin{aligned}
-# x_k & = f(x_{k-1}) + \\eta_k \\\\
-# y_k & = H x_k + \\epsilon_k 
-# \\end{aligned}
+# \begin{aligned}
+# x_k & = f(x_{k-1}) + \eta_k \\
+# y_k & = H x_k + \epsilon_k 
+# \end{aligned}
 # ```
 #
 # with ``\\eta`` and ``\\epsilon`` some independant white
@@ -40,8 +40,6 @@
 
 using Plots, DifferentialEquations, NPSMC
 
-# # TEST ON LORENZ-63
-#
 # To begin, as dynamical model ``f``, we use the Lorenz-63 chaotic
 # system. First, we generate simulated trajectories from this dynamical
 # model and store them into the catalog. Then, we use this catalog
