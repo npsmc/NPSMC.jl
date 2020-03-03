@@ -21,6 +21,11 @@ jobs:
     - stage: "Documentation"
       julia: 1
       os: linux
+      addons:
+        apt:
+          packages:
+            - python-matplotlib
+            - python3-matplotlib
       script:
         - julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
         - travis_wait julia --project=docs/ docs/make.jl
