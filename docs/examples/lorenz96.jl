@@ -57,6 +57,7 @@ plot!(sol.t, x40)
 
 # run the data generation
 
+u0 = last(sol.u)
 xt, yo, catalog = generate_data(ssm, u0);
 
 # ## Plot state, observations and catalog
@@ -152,6 +153,7 @@ PyPlot.subplot(224)
 PyPlot.pcolormesh(hcat(x̂_analog_local.u...))
 PyPlot.ylabel("Lorenz-96 times")
 PyPlot.title("Local analog data assimilation")
+PyPlot.savefig("pattern-plot.svg"); nothing # hide
 
 # - Error
 
