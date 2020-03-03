@@ -23,27 +23,20 @@ Assimilation. *Monthly Weather Review*, 145(10), 4093-4107.
 
 ## Installing NPSMC
 
-In a Julia session switch to `pkg>` mode to add `NPSMC`:
-
-```julia
-julia>] # switch to pkg> mode
-pkg> add https://github.com/npsmc/NPSMC.jl
+```bash
+git clone https://github.com/npsmc/NPSMC.jl
+cd NPSMC.jl
+julia --project
 ```
-
-Alternatively, you can achieve the above using the `Pkg` API:
 
 ```julia
 julia> using Pkg
-julia> pkg"add https://github.com/npsmc/NPSMC.jl"
+julia> Pkg.instantiate()
+julia> using IJulia
+julia> notebook(dir=joinpath(pwd(),"notebooks"))
+[ Info: running ...
 ```
 
-When finished, make sure that you're back to the Julian prompt (`julia>`)
-and bring `NPSMC` into scope:
-
-```julia
-julia> using NPSMC
-julia> include("notebooks/lorenz63.jl")
-```
 
 ## See also
 
