@@ -13,13 +13,16 @@
 
 **N**on **P**arametric **S**equential **M**onte-**C**arlo methods
 
+This package is derived from the [¡AnDA!](https://github.com/ptandeo/anda) 
+and [¡CEDA!] Python libraries written by [Pierre Tandeo](pierre.tandeo@imt-atlantique.fr).  
+This Python library are attached to the following publications:
 
-This package is derived from the [¡AnDA! Python library](https://github.com/ptandeo/anda) 
-written by [Pierre Tandeo](pierre.tandeo@imt-atlantique.fr).  This Python library is attached to
-the following publication
-(http://journals.ametsoc.org/doi/abs/10.1175/MWR-D-16-0441.1): Lguensat, R.,
+- (http://journals.ametsoc.org/doi/abs/10.1175/MWR-D-16-0441.1): Lguensat, R.,
 Tandeo, P., Ailliot, P., Pulido, M., & Fablet, R. (2017). The Analog Data
 Assimilation. *Monthly Weather Review*, 145(10), 4093-4107.
+
+- (http://onlinelibrary.wiley.com/doi/10.1002/qj.3048/full): Dreano, D., Tandeo, P., Pulido, M., Ait‐El‐Fquih, B., Chonavel, T., & Hoteit, I. (2017). Estimating Model‐Error Covariances in Nonlinear State‐Space Models using Kalman Smoothing and the Expectation–Maximization Algorithm. *Quarterly Journal of the Royal Meteorological Society*, 143(705), 1877-1885.
+
 
 ## Installing NPSMC
 
