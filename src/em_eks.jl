@@ -28,23 +28,14 @@ function likelihood(Xf, Pf, Yo, R, H)
   T = Xf.shape[1]
   l = 0
   for t in 1:T
-      if !isnan(Yo[0,t])
-          sig = H[:,:,t].dot(Pf[:,:,t]).dot(H[:,:,t].T) + R
-          innov = Yo[:,t] - H[:,:,t].dot(Xf[:,t])
+      if !isnan(Yo[1,t])
+          sig = H[:,:,t] * (Pf[:,:,t] * H[:,:,t]') + R
+          innov = Yo[:,t] - H[:,:,t] * Xf[:,t]
           
-          #l -= .5 * np.log(np.linalg.det(sig))
-    
-          sign, l_tmp = np.linalg.slogdet(sig)
+          sign, l_tmp = logabsdet(sig)
           l -= .5 * sign * l_tmp
                   
-          #try:
-          #  import warnings
-          #  warnings.filterwarnings('error')
-          #  l -= .5 * np.log(np.linalg.det(sig))
-          #except:
-          #  import pdb; pdb.set_trace()
-
-          l -= .5 * innov.T.dot(np.linalg.solve(sig, innov))
+          l -= .5 * innov' * ( sig \ innov)
       end
   end
   return l
@@ -60,25 +51,28 @@ function EKF(Nx, No, T, xb, B, Q, R, Yo, f, jacF, h, jacH, alpha)
     H_all = zeros((No, Nx, T))
     Kf_all = zeros((Nx, No, T))
 
-    x = xb; Xa[:,1] = x
-    P = B; Pa[:,:,1] = P
+    x = xb
+    Xa[:,1] = x
+    P = B
+    Pa[:,:,1] = P
+
     for t in 1:T
         # Forecast
         F = jacF(x)
         x = f(x)
-        P = F.dot(P).dot(F.T) + Q
-        P = .5*(P + P.T)
+        P .= F * P * F' + Q
+        P .= .5 .* (P + P')
 
         Pf[:,:,t]=P; Xf[:,t]=x; F_all[:,:,t]=F
 
         # Update
-        if !isnan(Yo[1,t]):
+        if !isnan(Yo[1,t])
             H = jacH(x)
             d = Yo[:,t] - h(x)
-            S = H.dot(P).dot(H.T) + R/alpha
-            K = P.dot(H.T).dot(inv(S))
-            P = (np.eye(Nx) - K.dot(H)).dot(P)
-            x = x + K.dot(d)
+            S = H * P * H' + R/alpha
+            K = P * H' * inv(S)
+            P .= (Matrix(I, Nx, Nx) - K * H) * P
+            x .= x + K * d
         end
         
 
@@ -98,42 +92,27 @@ function EKS(Nx, No, T, xb, B, Q, R, Yo, f, jacF, h, jacH, alpha)
     Xa, Pa, Xf, Pf, F, H, Kf = EKF(Nx, No, T, xb, B, Q, R, Yo, f,
                                            jacF, h, jacH, alpha)
 
-    Xs = np.zeros((Nx, T+1))
-    Ps = np.zeros((Nx, Nx, T+1))
-    K_all = np.zeros((Nx, Nx, T))
+    Xs = zeros(Float64, (Nx, T+1))
+    Ps = zeros(Float64, (Nx, Nx, T+1))
+    K_all = zeros(Float64, (Nx, Nx, T))
 
-    x = Xa[:,-1]; Xs[:,-1] = x
-    P = Pa[:,:,-1]; Ps[:,:,-1] = P
+    x = Xa[:,end]
+    Xs[:,end] = x
+    P = Pa[:,:,end]
+    Ps[:,:,end] = P
 
-    for t in range(T-1, -1, -1)
-        K = Pa[:,:,t].dot(F[:,:,t].T).dot(inv(Pf[:,:,t]))
-        x = Xa[:,t] + K.dot(x - Xf[:,t])
-        P = Pa[:,:,t] - K.dot(Pf[:,:,t] - P).dot(K.T) 
+    for t in T:-1:1
+        K = Pa[:,:,t] * F[:,:,t]' * inv(Pf[:,:,t])
+        x = Xa[:,t] + K * (x - Xf[:,t])
+        P = Pa[:,:,t] - K * (Pf[:,:,t] - P) * K'
 
         Ps[:,:,t]=P; Xs[:,t]=x; K_all[:,:,t]=K
     end
 
-    # Dreano et al. 2017, Eq. (30)
-    #Ps_lag = np.zeros((Nx, Nx, T))
-    #Ps_lag[:,:,-1] = ((np.eye(Nx)-Kf[:,:,-1].dot(H[:,:,-1])).dot(F[:,:,-1]).dot(Pa[:,:,-2]))
-    #for t in range(T-2, -1, -1):
-    #  Ps_lag[:,:,t] += Pa[:,:,t+1].dot(K_all[:,:,t].T)
-    #  Ps_lag[:,:,t] += (K_all[:,:,t+1]
-    #                 .dot(Ps_lag[:,:,t+1] - F[:,:,t+1].dot(Pa[:,:,t+1]))
-    #                 .dot(K_all[:,:,t].T))
+    Ps_lag = zeros(Float64, (Nx, Nx, T))
 
-    # Tandeo PhD dissertation, Eq. (2.22), seems to be equivalent to Dreano formula
-    #Ps_lag = np.zeros((Nx, Nx, T))
-    #Ps_lag[:,:,-1] = ((np.eye(Nx)-Kf[:,:,-1].dot(H[:,:,-1])).dot(F[:,:,-1]).dot(Pa[:,:,-2]))
-    #for t in range(T-2, -1, -1):
-    #  Sigma = (np.eye(Nx) - Kf[:,:,t].dot(H[:,:,t])).dot(F[:,:,t]).dot(Pa[:,:,t-1])
-    #  Ps_lag[:,:,t] = Sigma + (Ps[:,:,t] - Pa[:,:,t]).dot(inv(Pa[:,:,t])).dot(Sigma)
-
-    # pykalman
-    Ps_lag = np.zeros((Nx, Nx, T))
-    #Ps_lag[:,:,-1] = ((np.eye(Nx)-Kf[:,:,-1].dot(H[:,:,-1])).dot(F[:,:,-1]).dot(Pa[:,:,-2]))
-    for t in range(1,T):
-        Ps_lag[:,:,t] = Ps[:,:,t].dot(K_all[:,:,t-1].T)
+    for t in 2:T
+        Ps_lag[:,:,t] = Ps[:,:,t] * K_all[:,:,t-1]'
     end
 
     return Xs, Ps, Ps_lag, Xa, Pa, Xf, Pf, H
@@ -142,23 +121,22 @@ end
 
 function maximize(Xs, Ps, Ps_lag, Yo, h, jacH, f, jacF, structQ, baseQ=None)
 
-    No = Yo.shape[0]  
-    T = Yo.shape[1]
-    Nx = Xs.shape[0]
+    No, T = size(Yo)
+    Nx = size(Xs)[1]
 
-    xb = Xs[:,0]
-    B = Ps[:,:,0]
+    xb = Xs[:,1]
+    B = Ps[:,:,1]
     R = 0
     nobs = 0
     sumSig = 0
 
     # Dreano et al. 2017, Eq. (34)
-    for t in range(T)
-        if not np.isnan(Yo[0,t])
+    for t in 1:T
+        if !isnan.(Yo[1,t])
             nobs += 1
             H = jacH(Xs[:,t+1])
             R += np.outer(Yo[:,t] - h(Xs[:,t+1]), Yo[:,t] - h(Xs[:,t+1]))
-            R += H.dot(Ps[:,:,t+1]).dot(H.T)
+            R += H * Ps[:,:,t+1] * H'
         end
     end
     R = .5*(R + R.T)
@@ -175,25 +153,21 @@ function maximize(Xs, Ps, Ps_lag, Yo, h, jacH, f, jacF, structQ, baseQ=None)
       F = jacF(Xs[:,t+1])
       sumSig += Ps[:,:,t+1]
       sumSig += np.outer(Xs[:,t+1]-f(Xs[:,t]), Xs[:,t+1]-f(Xs[:,t])) # CAUTION: error in Dreano equations
-      sumSig += F.dot(Ps[:,:,t]).dot(F.T)
+      sumSig += F * Ps[:,:,t] * F'
       sumSig -= Ps_lag[:,:,t].dot(F.T) + F.dot(Ps_lag[:,:,t].T) # CAUTION: transpose at the end (error in Dreano equations)
       sumSig = .5*(sumSig + sumSig.T)
 
-      # Shumway 1982, Eq. (13), not working
-      #mat_A += Ps[:,:,t] + np.outer(Xs[:,t], Xs[:,t])
-      #mat_B += Ps_lag[:,:,t] + np.outer(Xs[:,t+1], Xs[:,t])
-      #mat_C += Ps[:,:,t+1] + np.outer(Xs[:,t+1], Xs[:,t+1])
-    #sumSig = mat_C - mat_B.dot(inv(mat_A)).dot(mat_B.T) # CAUTION: only for Shumway solution
+    end
 
     if structQ == 'full'
-      Q = sumSig/T
+      Q = sumSig ./ T
     elseif structQ == 'diag'
-      Q = np.diag(np.diag(sumSig))/T
+      Q = diag(diag(sumSig)) ./ T
     elseif structQ == 'const'
-      alpha = np.trace(inv_svd(baseQ).dot(sumSig)) / (T*Nx)
-      Q = alpha*baseQ
-      beta = np.trace(inv_svd(baseQ).dot(R)) / (No) ### MODIF PIERRE ###
-      R = beta*baseQ ### MODIF PIERRE ###
+      alpha = trace(pinv(baseQ) * sumSig) ./ (T*Nx)
+      Q = alpha * baseQ
+      beta = trace(pinv(baseQ) * R ) / No 
+      R = beta * baseQ
     end
  
     return xb, B, Q, R
