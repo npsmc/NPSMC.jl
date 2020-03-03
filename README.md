@@ -11,7 +11,7 @@
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://npsmc.github.io/NPSMC.jl/dev)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/npsmc/NPSMC.jl/master?filepath=https%3A%2F%2Fgithub.com%2Fnpsmc%2FNPSMC.jl%2Fnotebooks)
 
-Non parametric sequential Monte-Carlo methods
+**N**on **P**arametric **S**equential **M**onte-**C**arlo methods
 
 
 This package is derived from the [¡AnDA! Python library](https://github.com/ptandeo/anda) 
