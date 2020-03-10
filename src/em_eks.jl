@@ -3,12 +3,16 @@ using Statistics
 "Returns the Root Mean Squared Error"
 RMSE(E) = sqrt(mean(E.^2))
 
-"Returns the number of true state in the 95% confidence interval"
+"""
+    cov_prob(Xs, Ps, X_true)
+Returns the number of true state in the 95% confidence interval
+"""
 function cov_prob(Xs, Ps, X_true)
     n, T = size(X_true)
     s = 0
-    for i_n in 1:n:
-        s += sum((Xs[i_n,:] .- 1.96 * sqrt.(Ps[i_n,i_n,:]) .<= X_true[i_n,:]) & (Xs[i_n,:] .+ 1.96 * sqrt.(Ps[i_n,i_n,:]) .>= X_true[i_n,:])) ./ T
+    for i in 1:n
+        s += sum((Xs[i,:] .- 1.96 * sqrt.(Ps[i,i,:]) .<= X_true[i,:]) & (Xs[i,:] .+ 1.96 * sqrt.(Ps[i,i,:]) .>= X_true[i,:])) ./ T
+    end
     return s
 end
 
@@ -75,7 +79,6 @@ function EKF(Nx, No, T, xb, B, Q, R, Yo, f, jacF, h, jacH, alpha)
             x .= x + K * d
         end
         
-
         Pa[:,:,t+1]   = P
         Xa[:,t+1]     = x 
         H_all[:,:,t]  = H 
@@ -135,7 +138,7 @@ function maximize(Xs, Ps, Ps_lag, Yo, h, jacH, f, jacF, structQ, baseQ=None)
         if !isnan.(Yo[1,t])
             nobs += 1
             H = jacH(Xs[:,t+1])
-            R += np.outer(Yo[:,t] - h(Xs[:,t+1]), Yo[:,t] - h(Xs[:,t+1]))
+            R += outer(Yo[:,t] - h(Xs[:,t+1]), Yo[:,t] - h(Xs[:,t+1]))
             R += H * Ps[:,:,t+1] * H'
         end
     end
@@ -152,7 +155,7 @@ function maximize(Xs, Ps, Ps_lag, Yo, h, jacH, f, jacF, structQ, baseQ=None)
       # Dreano et al. 2017, Eq. (33)
       F = jacF(Xs[:,t+1])
       sumSig += Ps[:,:,t+1]
-      sumSig += np.outer(Xs[:,t+1]-f(Xs[:,t]), Xs[:,t+1]-f(Xs[:,t])) # CAUTION: error in Dreano equations
+      sumSig += outer(Xs[:,t+1]-f(Xs[:,t]), Xs[:,t+1]-f(Xs[:,t])) # CAUTION: error in Dreano equations
       sumSig += F * Ps[:,:,t] * F'
       sumSig -= Ps_lag[:,:,t].dot(F.T) + F.dot(Ps_lag[:,:,t].T) # CAUTION: transpose at the end (error in Dreano equations)
       sumSig = .5*(sumSig + sumSig.T)
@@ -196,19 +199,19 @@ function EKS(params)
   l = _likelihood(Xf, Pf, Yo, R, H)
   cov_p = cov_prob(Xs, Ps, Xt)
   
-  res = {
-          'smoothed_states'            : Xs,
-          'smoothed_covariances'       : Ps,
-          'smoothed_lagged_covariances': Ps_lag,
-          'analysis_states'            : Xa,
-          'analysis_covariance'        : Pa,
-          'forecast_states'            : Xf,
-          'forecast_covariance'        : Pf,
-          'RMSE'                       : RMSE(Xs - Xt),
-          'params'                     : params,
-          'loglikelihood'              : l,
-          'cov_prob'                   : cov_p
-        }
+  res = Dict(
+          'smoothed_states'            => Xs,
+          'smoothed_covariances'       => Ps,
+          'smoothed_lagged_covariances'=> Ps_lag,
+          'analysis_states'            => Xa,
+          'analysis_covariance'        => Pa,
+          'forecast_states'            => Xf,
+          'forecast_covariance'        => Pf,
+          'RMSE'                       => RMSE(Xs - Xt),
+          'params'                     => params,
+          'loglikelihood'              => l,
+          'cov_prob'                   => cov_p
+        )
   return res
 
 end
@@ -241,26 +244,26 @@ function EM_EKS(params)
     end
 
     # compute Gaspari Cohn matrices
-    gaspari_cohn_matrix_Q = np.eye(Nx)
-    gaspari_cohn_matrix_R = np.eye(No)
+    gaspari_cohn_matrix_Q = eye(Nx)
+    gaspari_cohn_matrix_R = eye(No)
     L = 10
     for i_dist in range(1,40):
-        gaspari_cohn_matrix_Q += np.diag(gaspari_cohn(i_dist/L)*np.ones(Nx-i_dist),i_dist) + np.diag(gaspari_cohn(i_dist/L)*np.ones(Nx-i_dist),-i_dist)
-        gaspari_cohn_matrix_Q += np.diag(gaspari_cohn(i_dist/L)*np.ones(i_dist),Nx-i_dist) + np.diag(gaspari_cohn(i_dist/L)*np.ones(i_dist),Nx-i_dist).T
-        gaspari_cohn_matrix_R += np.diag(gaspari_cohn(i_dist/L)*np.ones(No-i_dist),i_dist) + np.diag(gaspari_cohn(i_dist/L)*np.ones(No-i_dist),-i_dist)
-        gaspari_cohn_matrix_R += np.diag(gaspari_cohn(i_dist/L)*np.ones(i_dist),No-i_dist) + np.diag(gaspari_cohn(i_dist/L)*np.ones(i_dist),No-i_dist).T
+        gaspari_cohn_matrix_Q += diag(gaspari_cohn(i_dist/L)*ones(Nx-i_dist),i_dist) + diag(gaspari_cohn(i_dist/L)*ones(Nx-i_dist),-i_dist)
+        gaspari_cohn_matrix_Q += diag(gaspari_cohn(i_dist/L)*ones(i_dist),Nx-i_dist) + diag(gaspari_cohn(i_dist/L)*ones(i_dist),Nx-i_dist).T
+        gaspari_cohn_matrix_R += diag(gaspari_cohn(i_dist/L)*ones(No-i_dist),i_dist) + diag(gaspari_cohn(i_dist/L)*ones(No-i_dist),-i_dist)
+        gaspari_cohn_matrix_R += diag(gaspari_cohn(i_dist/L)*ones(i_dist),No-i_dist) + diag(gaspari_cohn(i_dist/L)*ones(i_dist),No-i_dist).T
     end
 
-    loglik = np.zeros(nIter)
-    rmse_em = np.zeros(nIter)
-    cov_prob_em = np.zeros(nIter)
+    loglik = zeros(nIter)
+    rmse_em = zeros(nIter)
+    cov_prob_em = zeros(nIter)
 
-    Q_all  = zeros(np.r_[Q.shape, nIter+1])
-    R_all  = zeros(np.r_[R.shape, nIter+1])
-    B_all  = zeros(np.r_[B.shape, nIter+1])
-    xb_all = zeros(np.r_[xb.shape, nIter+1])
+    Q_all  = zeros(r_[Q.shape, nIter+1])
+    R_all  = zeros(r_[R.shape, nIter+1])
+    B_all  = zeros(r_[B.shape, nIter+1])
+    xb_all = zeros(r_[xb.shape, nIter+1])
 
-    Xs_all = np.zeros([Nx, T+1, nIter])
+    Xs_all = zeros([Nx, T+1, nIter])
 
     Q_all[:,:,0] = Q
     R_all[:,:,0] = R
@@ -289,12 +292,12 @@ function EM_EKS(params)
       end
       if estimateR:
         R = R_new
-        #R = np.multiply(gaspari_cohn_matrix_R, R_new)
+        #R = multiply(gaspari_cohn_matrix_R, R_new)
       end
       if estimateX0:
         xb = xb_new
         B = B_new
-        #B = np.multiply(gaspari_cohn_matrix_Q, B_new)
+        #B = multiply(gaspari_cohn_matrix_Q, B_new)
       end
 
       Q_all[:,:,k+1] = Q
