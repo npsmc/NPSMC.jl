@@ -6,7 +6,7 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.5
+#       jupytext_version: 1.4.0
 #   kernelspec:
 #     display_name: Julia 1.3.1
 #     language: julia
@@ -14,52 +14,97 @@
 # ---
 
 using LinearAlgebra, Distributions, DifferentialEquations
+using Plots
 
-A = [2.50430061e-01 5.27015617e-02 8.98078667e-01 4.40716511e-01;
-     6.26357655e-01 6.73178687e-01 2.24530912e-01 8.18640720e-01;
-     6.85277570e-04 4.11289803e-01 4.45727050e-02 1.62456188e-01;
-     8.52668155e-01 4.17796897e-01 8.18811326e-01 4.17691378e-01]
-
-pinv(A)
-
-"Returns the square root matrix by SVD"
+"""
+Returns the square root matrix by SVD
+"""
 function sqrt_svd(A)  
    F = svd(A)
    F.U * diagm(sqrt.(F.S)) * F.Vt
 end
 
 
-"Returns the Root Mean Squared Error"
+"""
+Returns the Root Mean Squared Error
+"""
 RMSE(E) = sqrt.(mean(E.^2))
+
+# +
+using Distributions, Random
+
+rng = MersenneTwister(42)
+
+# -
+
+# # Generate true state
+
+# +
+dt = .01 
+sigma = 10
+rho = 28
+beta = 8/3 
+u0 = [6.39435776, 9.23172442, 19.15323224]
+K = 1000
+
+function lorenz63(du, u, p, t)
+
+    du[1] = p[1] * (u[2] - u[1])
+    du[2] = u[1] * (p[2] - u[3]) - u[2]
+    du[3] = u[1] * u[2] - p[3] * u[3]
+
+end
+
+parameters = [sigma, rho, beta]
+
+# +
+dt = .01 
+sigma = 10
+rho = 28
+beta = 8/3 
+u0 = [6.39435776, 9.23172442, 19.15323224]
+K = 1000
+
+function lorenz63(du, u, p, t)
+
+    du[1] = p[1] * (u[2] - u[1])
+    du[2] = u[1] * (p[2] - u[3]) - u[2]
+    du[3] = u[1] * u[2] - p[3] * u[3]
+
+end
+
+parameters = [sigma, rho, beta]
+
+function gen_truth(model, x0, nt, Q, rng)
+     d = MvNormal(Q)
+     xt = [x0 for i in 1:nt+1]
+     for k in 1:nt
+        tspan = (0.0, dt)
+        prob  = ODEProblem(lorenz63, xt[k], tspan, parameters)
+        xt[k+1] = last(solve(prob, reltol=1e-6, save_everystep=false)) .+ rand(rng, d)
+     end
+     xt
+end
+# -
+
+size(sol.u)
 
 
 
 
 # +
-using Distributions, Random
 
-d = MvNormal(1.0 .* Matrix(I,3,3))
+h = lambda x: x # observation operator (nonlinear version)
+H = eye(3) # observation operator (linear version)
+Q_true = 0.05*eye(3)
+x_true = gen_truth(m, r_, K, Q_true, RandomState(5))
 
-rng = MersenneTwister(42)
-
-rand(rng, d)
 # -
 
-d = MvNormal(1.0 .* Matrix(I,3,3))
-
-
-
-function gen_truth(f, x0, nt, Q, rng)
-     nv = size(x0)
-     xt = [zeros(nv) for i in 1:nt+1]
-     xt[1] .= x0
-     d = MvNormal(Q)
-     for k in 1:nt
-        xt[k+1] = f(xt[k]) .+ rand(rng, d)
-     end
-     xt
-end
-
+# compute u0 to be in the attractor space
+tspan = (0.0,5.0)
+prob  = ODEProblem(ssm.model, u0, tspan, parameters)
+u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
 function gen_obs(h, xt, R, nb_assim, rng)
     nv = size(R)[1]
@@ -75,14 +120,22 @@ function gen_obs(h, xt, R, nb_assim, rng)
     return yo
 end
 
-
-# compute u0 to be in the attractor space
-u0    = [8.0;0.0;30.0]
-tspan = (0.0,5.0)
-prob  = ODEProblem(ssm.model, u0, tspan, parameters)
-u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
-
 # +
+
+# generate noisy observations
+dt_obs = 5 # 1 observation every dt_obs time steps
+R_true = 2*eye(3)
+y = gen_obs(h, x_true, R_true, dt_obs, RandomState(5))
+# -
+
+
+# plot results
+figure()
+line1,=plot(range(K),x_true[0,1:],'r',linewidth=2)
+line2,=plot(range(K),y[0,:],'.k')
+legend([line1, line2], ['True state $x$', 'Noisy observations $y$'], prop={'size': 20})
+title('Simulated data from the Lorenz-63 model (only the first component)', fontsize=20)
+
 def _EnKS(Nx, Ne, T, H, R, Yo, Xt, No, xb, B, Q, alpha, f, prng):
   Xa, Xf = _EnKF(Nx, T, No, xb, B, Q, R, Ne, alpha, f, H, Yo, prng)
 
@@ -101,7 +154,8 @@ def _EnKS(Nx, Ne, T, H, R, Yo, Xt, No, xb, B, Q, alpha, f, prng):
 
   return Xs, Xa, Xf
 
-def EnKS(params, prng):
+
+function EnKS(params, prng):
   Nx = params['state_size']
   Ne = params['nb_particles']
   T  = params['temporal_window_size']
@@ -127,6 +181,8 @@ def EnKS(params, prng):
           'params'           : params
          }
   return res
+end
+
 # -
 
 
@@ -163,8 +219,9 @@ function maximize(X, obs, H, f; structQ = :full, baseQ = nothing):
     return xb, B, Q, R
 end
 
+# -
 
-def _likelihood(Xf, obs, H, R):
+function _likelihood(Xf, obs, H, R):
   T = Xf.shape[2]
 
   x = np.mean(Xf, 1)
@@ -180,8 +237,12 @@ def _likelihood(Xf, obs, H, R):
       l -= .5 * innov.T.dot(inv(sig)).dot(innov)
   return l
 
+end
 
-def _EnKF(Nx, T, No, xb, B, Q, R, Ne, alpha, f, H, obs, prng):
+# -
+
+function _EnKF(Nx, T, No, xb, B, Q, R, Ne, alpha, f, H, obs, prng):
+
   sqQ = sqrt_svd(Q)
   sqR = sqrt_svd(R)
   sqB = sqrt_svd(B)
@@ -214,8 +275,13 @@ def _EnKF(Nx, T, No, xb, B, Q, R, Ne, alpha, f, H, obs, prng):
 
   return Xa, Xf
 
+end
 
-def EM_EnKS(params, prng):
+# -
+
+
+function EM_EnKS(params, prng):
+
   xb      = params['initial_background_state']
   B       = params['initial_background_covariance']
   Q       = params['initial_model_noise_covariance']
@@ -287,40 +353,12 @@ def EM_EnKS(params, prng):
   return res
 
 
+end
 
+# -
 
-# generate true state 
-dt = .01 # integration time
-sigma = 10;rho = 28;beta = 8./3 # physical parameters of Lorenz-63
-m = lambda x: l63_predict(x, dt, sigma, rho, beta) # dynamic operator
-h = lambda x: x # observation operator (nonlinear version)
-H = eye(3) # observation operator (linear version)
-K = 1000
-Q_true = 0.05*eye(3)
-x_true = gen_truth(m, r_[6.39435776, 9.23172442, 19.15323224], K, Q_true, RandomState(5))
+# -
 
-# +
-# generate true state 
-dt = .01 # integration time
-sigma = 10;rho = 28;beta = 8./3 # physical parameters of Lorenz-63
-m = lambda x: l63_predict(x, dt, sigma, rho, beta) # dynamic operator
-h = lambda x: x # observation operator (nonlinear version)
-H = eye(3) # observation operator (linear version)
-K = 1000
-Q_true = 0.05*eye(3)
-x_true = gen_truth(m, r_[6.39435776, 9.23172442, 19.15323224], K, Q_true, RandomState(5))
-
-# generate noisy observations
-dt_obs = 5 # 1 observation every dt_obs time steps
-R_true = 2*eye(3)
-y = gen_obs(h, x_true, R_true, dt_obs, RandomState(5))
-
-# plot results
-figure()
-line1,=plot(range(K),x_true[0,1:],'r',linewidth=2)
-line2,=plot(range(K),y[0,:],'.k')
-legend([line1, line2], ['True state $x$', 'Noisy observations $y$'], prop={'size': 20})
-title('Simulated data from the Lorenz-63 model (only the first component)', fontsize=20)
 
 # apply EnKS with good covariances
 params = { 'state_size'                  : 3,
@@ -336,6 +374,7 @@ params = { 'state_size'                  : 3,
            'model_noise_covariance'      : Q_true,
            'inflation_factor'            : 1,
            'model_dynamics'              : m}
+
 EnKS_true_Q_R=EnKS(params, RandomState(5))
 ens_true_Q_R=EnKS_true_Q_R['smoothed_ensemble'] # smoother ensembles
 xs_true_Q_R=mean(EnKS_true_Q_R['smoothed_ensemble'], 1)
@@ -350,8 +389,5 @@ fill_between(range(K), squeeze(xs_true_Q_R[0,1:]) - 1.96 * sqrt(squeeze(Ps_true_
              squeeze(xs_true_Q_R[0,1:]) + 1.96 * sqrt(squeeze(Ps_true_Q_R[1:])), color='k', alpha=.2)
 legend([line1, line2, line3], ['True state $x$', 'Noisy observations $y$', 'Estimated state'], prop={'size': 20})
 title('Results of the EnKS (only the first component)', fontsize=20)
+
 # -
-
-
-
-
