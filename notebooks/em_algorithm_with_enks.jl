@@ -6,7 +6,7 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.0
+#       jupytext_version: 1.3.4
 #   kernelspec:
 #     display_name: Julia 1.3.1
 #     language: julia
@@ -14,7 +14,7 @@
 # ---
 
 using LinearAlgebra, Distributions, DifferentialEquations
-using Plots
+using Plots, Random
 
 """
 Returns the square root matrix by SVD
@@ -30,40 +30,46 @@ Returns the Root Mean Squared Error
 """
 RMSE(E) = sqrt.(mean(E.^2))
 
-# +
-using Distributions, Random
-
-rng = MersenneTwister(42)
-
-# -
-
 # # Generate true state
 
 # +
-dt = .01 
-sigma = 10
-rho = 28
-beta = 8/3 
-u0 = [6.39435776, 9.23172442, 19.15323224]
-K = 1000
-
-function lorenz63(du, u, p, t)
-
-    du[1] = p[1] * (u[2] - u[1])
-    du[2] = u[1] * (p[2] - u[3]) - u[2]
-    du[3] = u[1] * u[2] - p[3] * u[3]
-
+"""
+    Time integration of Lorenz-63
+    Runke-Kutta fourth order
+"""
+function integrate( model, x, p, dt )
+        
+    f1 = zero(x)
+    f2 = zero(x)
+    f3 = zero(x)
+    f4 = zero(x)
+    t = nothing
+    ncy = 1000
+    dtcy = dt / ncy
+    
+    for k = 1:ncy
+        xtmp = x
+        model(f1, xtmp, p, t)
+        xtmp = x .+ f1 .* dtcy
+        model(f2, xtmp, p, t)
+        xtmp = x .+ f2 .* dtcy
+        model(f3, xtmp, p, t)
+        xtmp = x .+ f3 .* dtcy
+        model(f4, xtmp, p, t)
+        x .+= ( f1 .+ 2 .* f2 .+ 2 .* f3 .+ f4 ) ./ 6 * dtcy
+    end
+    
+    x
+     
 end
-
-parameters = [sigma, rho, beta]
 
 # +
 dt = .01 
 sigma = 10
 rho = 28
 beta = 8/3 
-u0 = [6.39435776, 9.23172442, 19.15323224]
-K = 1000
+x0 = [6.39435776, 9.23172442, 19.15323224]
+nt, nv = 1000, 3
 
 function lorenz63(du, u, p, t)
 
@@ -77,39 +83,24 @@ parameters = [sigma, rho, beta]
 
 function gen_truth(model, x0, nt, Q, rng)
      d = MvNormal(Q)
-     xt = [x0 for i in 1:nt+1]
-     for k in 1:nt
-        tspan = (0.0, dt)
-        prob  = ODEProblem(lorenz63, xt[k], tspan, parameters)
-        xt[k+1] = last(solve(prob, reltol=1e-6, save_everystep=false)) .+ rand(rng, d)
+     xt = [zero(x0) for i in 1:nt+1]
+     xt[1] .= x0
+     @show dt
+     for k in 1:nt        
+        xt[k+1] .= integrate(model, xt[k], parameters, dt) .+ rand(rng, d)
      end
      xt
 end
 # -
 
-size(sol.u)
-
-
-
+Q_true = 0.05 .* Matrix(I, 3, 3)
+x_true = gen_truth(lorenz63, x0, nt, Q_true, MersenneTwister(5));
 
 # +
-
-h = lambda x: x # observation operator (nonlinear version)
-H = eye(3) # observation operator (linear version)
-Q_true = 0.05*eye(3)
-x_true = gen_truth(m, r_, K, Q_true, RandomState(5))
-
-# -
-
-# compute u0 to be in the attractor space
-tspan = (0.0,5.0)
-prob  = ODEProblem(ssm.model, u0, tspan, parameters)
-u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
-
 function gen_obs(h, xt, R, nb_assim, rng)
-    nv = size(R)[1]
-    nt = length(xt)
-    yo = [zeros(nv) for i in 1:nt]
+    @show nv = xt[1]
+    @show nt = length(xt)
+    yo = [zeros(Float64,nv) for i in 1:nt]
     yo .= NaN
     d = MvNormal(R)
     for k in 1:nt
@@ -120,13 +111,15 @@ function gen_obs(h, xt, R, nb_assim, rng)
     return yo
 end
 
-# +
-
 # generate noisy observations
+h(x) = x # observation operator (nonlinear version)
+H = 1.0 .* Matrix(I,3,3) # observation operator (linear version)
 dt_obs = 5 # 1 observation every dt_obs time steps
-R_true = 2*eye(3)
-y = gen_obs(h, x_true, R_true, dt_obs, RandomState(5))
+R_true = 2.0 .* H
+y = gen_obs(h, x_true, R_true, dt_obs, MersenneTwister(5))
 # -
+
+
 
 
 # plot results
