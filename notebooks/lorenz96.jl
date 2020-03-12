@@ -8,7 +8,7 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.3
+#       jupytext_version: 1.3.4
 #   kernelspec:
 #     display_name: Julia 1.3.1
 #     language: julia
@@ -50,8 +50,8 @@ dt_integration = 0.05 # integration time
 dt_states = 1 # number of integration times between consecutive states (for xt and catalog)
 dt_obs = 4 # number of integration times between consecutive observations (for yo)
 var_obs = randperm(rng, J)[1:20] # indices of the observed variables
-nb_loop_train = 20 # size of the catalog
-nb_loop_test = 5 # size of the true state and noisy observations
+nb_loop_train = 100 # size of the catalog
+nb_loop_test = 10 # size of the true state and noisy observations
 sigma2_catalog = 0.   # variance of the model error to generate the catalog   
 sigma2_obs = 2. # variance of the observation error to generate observations
 
