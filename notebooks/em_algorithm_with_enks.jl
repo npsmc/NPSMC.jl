@@ -70,7 +70,7 @@ rho = 28
 beta = 8/3 
 x0 = [6.39435776, 9.23172442, 19.15323224]
 nt, nv = 1000, 3
-
+T = nt * dt
 function lorenz63(du, u, p, t)
 
     du[1] = p[1] * (u[2] - u[1])
@@ -98,14 +98,15 @@ x_true = gen_truth(lorenz63, x0, nt, Q_true, MersenneTwister(5));
 
 # +
 function gen_obs(h, xt, R, nb_assim, rng)
-    @show nv = xt[1]
-    @show nt = length(xt)
+    nv = size(xt[1])[1]
+    nt = length(xt)
     yo = [zeros(Float64,nv) for i in 1:nt]
-    yo .= NaN
     d = MvNormal(R)
     for k in 1:nt
         if k % nb_assim == 0
             yo[k] .= h(xt[k+1]) .+ rand(rng, R)
+        else
+            yo[k] .= NaN
         end
     end
     return yo
@@ -116,108 +117,161 @@ h(x) = x # observation operator (nonlinear version)
 H = 1.0 .* Matrix(I,3,3) # observation operator (linear version)
 dt_obs = 5 # 1 observation every dt_obs time steps
 R_true = 2.0 .* H
-y = gen_obs(h, x_true, R_true, dt_obs, MersenneTwister(5))
+y = gen_obs(h, x_true, R_true, dt_obs, MersenneTwister(5));
 # -
 
+# # Plot results
 
+# +
+time = collect(0:dt:T)
+obs = vcat(y'...)[:,1]
+indices = findall(!isnan, obs )
 
+plot(time, getindex.(x_true,1); lc=:red,lw=2, label="True state")
+title!("Simulated data from the Lorenz-63 model (only the first component)")
+scatter!(time[indices], obs[indices], mc = :blue, ms = 2,  label="Noisy observations")
 
-# plot results
-figure()
-line1,=plot(range(K),x_true[0,1:],'r',linewidth=2)
-line2,=plot(range(K),y[0,:],'.k')
-legend([line1, line2], ['True state $x$', 'Noisy observations $y$'], prop={'size': 20})
-title('Simulated data from the Lorenz-63 model (only the first component)', fontsize=20)
+# +
+"""
+EnKF forecast and analysis steps
+"""
+function _EnKF(nv, nt, no, xb, B, Q, R, ne, alpha, f, H, obs, prng)
 
-def _EnKS(Nx, Ne, T, H, R, Yo, Xt, No, xb, B, Q, alpha, f, prng):
-  Xa, Xf = _EnKF(Nx, T, No, xb, B, Q, R, Ne, alpha, f, H, Yo, prng)
+    sqQ = sqrt_svd(Q)
+    sqR = sqrt_svd(R)
+    sqB = sqrt_svd(B)
 
-  Xs = np.zeros([Nx, Ne, T+1])
-  Xs[:,:,-1] = Xa[:,:,-1]
-  for t in range(T-1,-1,-1):
-    Paf = np.cov(Xa[:,:,t], Xf[:,:,t])[:Nx, Nx:] ### MODIF PIERRE ###
-    Pff = np.cov(Xf[:,:,t])
-    try:
-      K = Paf.dot(inv(Pff))
-    except:
-      K = Paf.dot(Pff**(-1)) ### MODIF PIERRE ###
-    Xs[:,:,t] = Xa[:,:,t] + K.dot(Xs[:,:,t+1] - Xf[:,:,t])
-   # for i in range(Ne):
-   #   Xs[:,i, t] = Xa[:,i,t] + K.dot(Xs[:,i,t+1] - Xf[:,i,t])
+    xa = [zeros(nv,ne) for i in 1:nt+1] 
+    xf = [zeros(nv,ne) for i in 1:nt+1]
 
-  return Xs, Xa, Xf
+    # Initialize ensemble
+    for i in 1:ne
+        xa[1][:,i] .= xb .+ sqB * randn(prng, nv)
+    end
 
+    for k in 1:nt
+        Xf[k] .= f(Xa[k]) .+ sqQ * randn(prng, (nv,ne))
+        Y = H * Xf[k] .+ sqR * randn(prng,(no, ne))
 
-function EnKS(params, prng):
-  Nx = params['state_size']
-  Ne = params['nb_particles']
-  T  = params['temporal_window_size']
-  H  = params['observation_matrix']
-  R  = params['observation_noise_covariance']
-  Yo = params['observations']
-  Xt = params['true_state']
-  No = params['observation_size']
-  xb = params['background_state']
-  B  = params['background_covariance']
-  Q  = params['model_noise_covariance']
-  alpha = params['inflation_factor']
-  f  = params['model_dynamics']
+        if isnan(obs[k][1])
+            xa[k+1] .= Xf[k]
+        else
+            Pfxx = cov(Xf[k])
+            K = Pfxx * (H' * pinv(H * Pfxx * H' + R ./ alpha))
+            innov = obs[k]' .- Y
+            xa[k+1] = xf[k] + K * innov
+        end
+    end
+              
+    return xa, xf
 
-  Xs, Xa, Xf = _EnKS(Nx, Ne, T, H, R, Yo, Xt, No, xb, B, Q, alpha, f, prng)
+end
+# -
 
-  res = {
-          'smoothed_ensemble': Xs,
-          'analysis_ensemble': Xa,
-          'forecast_ensemble': Xf,
-          'loglikelihood'    : _likelihood(Xf, Yo, H, R),
-          'RMSE'             : RMSE(Xt - Xs.mean(1)),
-          'params'           : params
-         }
-  return res
+"""
+
+"""
+function _EnKS(nv, ne, nt, H, R, yo, xt, no, xb, B, Q, alpha, f, prng)
+
+    xa, xf = _EnKF(nv, nt, no, xb, B, Q, R, ne, alpha, f, H, Yo, prng)
+
+    xs = [zeros(nv,ne) for i in 1:nt+1] 
+    xs[end] .= xa[end]
+    for t in nt:-1:1
+        Paf = cov(xa[t], xf[t])
+        Pff = cov(xf[t])
+        K = Paf * pinv(Pff)
+        xs[t] .= xa[t] .+ K * (xs[t+1] - xf[t])
+    end
+    
+    return xs, xa, xf
 end
 
+
+# +
+function EnKS(params, prng)
+
+  Nx = params.state_size
+  Ne = params.nb_particles
+  T  = params.temporal_window_size
+  H  = params.observation_matrix
+  R  = params.observation_noise_covariance
+  Yo = params.observations
+  Xt = params.true_state
+  No = params.observation_size
+  xb = params.background_state
+  B  = params.background_covariance
+  Q  = params.model_noise_covariance
+  alpha = params.inflation_factor
+  f  = params.model_dynamics.
+
+  xs, xa, xf = _EnKS(Nx, Ne, T, H, R, Yo, Xt, No, xb, B, Q, alpha, f, prng)
+
+  res = (
+          smoothed_ensemble = Xs,
+          analysis_ensemble = Xa,
+          forecast_ensemble = Xf,
+          loglikelihood =  _likelihood(Xf, Yo, H, R),
+          RMSE = RMSE(Xt - Xs.mean(1)),
+          params = params
+         )
+  res
+  
+end
 # -
 
-
-function maximize(X, obs, H, f; structQ = :full, baseQ = nothing):
+function maximize(X, obs, H, f; structQ = :full, baseQ = nothing)
     
     Nx, Ne, T = X.shape
     No = obs.shape[0]
 
-    xb = np.mean(X[:,:,0], 1)
-    B = np.cov(X[:,:,0])
+    xb = mean(X[1], dims=2)
+    B = cov(X[1])
 
-    sumSig = np.zeros((Nx, Ne, T-1))
-    for t in range(T-1):
-      sumSig[...,t] = X[...,t+1] - f(X[...,t])
+    sumSig = [zeros(nv, ne) for i in 1:T-1]
+    for t in range(T-1)
+      sumSig[t] = X[t+1] - f(X[t])
+    end
     sumSig = np.reshape(sumSig, (Nx, (T-1)*Ne))
     sumSig = sumSig.dot(sumSig.T) / Ne
-    if structQ == 'full':
+    if structQ == :full
       Q = sumSig/(T-1)
-    elif structQ == 'diag':
-      Q = np.diag(np.diag(sumSig))/T
-    elif structQ == 'const':
-      alpha = np.trace(pinv(baseQ).dot(sumSig)) / ((T-1)*Nx)
+    elseif structQ == :diag
+      Q = diagm(diagm(sumSig)) ./ T
+    elseif structQ == :const
+      alpha = np.trace(pinv(baseQ).dot(sumSig)) ./ ((T-1)*Nx)
       Q = alpha*baseQ
+    end
 
-    W = np.zeros([No, Ne, T-1])
+    W = [zeros((No, Ne)) for i in 1:T-1]
     nobs = 0
-    for t in range(T-1):
-      if not np.isnan(obs[0,t]):
-        nobs += 1
-        W[:,:,t] = np.tile(obs[:,t], (Ne, 1)).T - H.dot(X[:,:,t+1])
-    W = np.reshape(W, (No, (T-1)*Ne))
-    R = W.dot(W.T) / (nobs*Ne)
+    for t in range(T-1)
+        if !isnan(obs[t][1])
+            nobs += 1
+            W[t] .= obs[t] .- H * X[t+1]
+        end
+    end
+    W = vcat(W... ) # reshape(W, (No, (T-1)*Ne))
+    R = W * W' / (nobs*Ne)
 
     return xb, B, Q, R
 end
 
+# +
+A = rand(3,10)
+mean(A, dims=2)
+
+A * A'
 # -
 
-function _likelihood(Xf, obs, H, R):
-  T = Xf.shape[2]
 
-  x = np.mean(Xf, 1)
+
+# +
+function _likelihood(xf, obs, H, R)
+
+  nt = length(xf)
+
+  x = mean(xf, 1)
 
   l = 0
   for t in range(T):
@@ -232,47 +286,7 @@ function _likelihood(Xf, obs, H, R):
 
 end
 
-# -
-
-function _EnKF(Nx, T, No, xb, B, Q, R, Ne, alpha, f, H, obs, prng):
-
-  sqQ = sqrt_svd(Q)
-  sqR = sqrt_svd(R)
-  sqB = sqrt_svd(B)
-
-  Xa = np.zeros([Nx, Ne, T+1])
-  Xf = np.zeros([Nx, Ne, T])
-
-  # Initialize ensemble
-  for i in range(Ne):
-    Xa[:,i,0] = xb + sqB.dot(prng.normal(size=Nx))
-
-  for t in range(T):
-    # Forecast
-    # for i in range(Ne):
-    #   Xf[:,i,t] = f(Xa[:,i,t]) + sqQ.dot(prng.normal(size=Nx))
-    Xf[:,:,t] = f(Xa[:,:,t]) + sqQ.dot(prng.normal(size=(Nx, Ne)))
-    Y = H.dot(Xf[:,:,t]) + sqR.dot(prng.normal(size=(No, Ne)))
-
-    # Update
-    if np.isnan(obs[0,t]):
-      Xa[:,:,t+1] = Xf[:,:,t]
-    else:
-      Pfxx = np.cov(Xf[:,:,t])
-      K = Pfxx.dot(H.T).dot(pinv(H.dot(Pfxx).dot(H.T) + R/alpha))
-      innov = np.tile(obs[:,t], (Ne, 1)).T - Y
-      Xa[:,:,t+1] = Xf[:,:,t] + K.dot(innov)
-#      for i in range(Ne):
-#        innov = obs[:,t] - Y[:,i]
-#        Xa[:,i,t+1] = Xf[:,i,t] + K.dot(innov)
-
-  return Xa, Xf
-
-end
-
-# -
-
-
+# +
 function EM_EnKS(params, prng):
 
   xb      = params['initial_background_state']
@@ -345,13 +359,8 @@ function EM_EnKS(params, prng):
         }
   return res
 
-
 end
-
 # -
-
-# -
-
 
 # apply EnKS with good covariances
 params = { 'state_size'                  : 3,
