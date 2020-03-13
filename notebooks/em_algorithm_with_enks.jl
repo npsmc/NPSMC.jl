@@ -229,17 +229,17 @@ function maximize(X, obs, H, f; structQ = :full, baseQ = nothing)
     B = cov(X[1])
 
     sumSig = [zeros(nv, ne) for i in 1:T-1]
-    for t in range(T-1)
+    for t in 1:T-1
       sumSig[t] = X[t+1] - f(X[t])
     end
-    sumSig = np.reshape(sumSig, (Nx, (T-1)*Ne))
-    sumSig = sumSig.dot(sumSig.T) / Ne
+    sumSig = reshape(sumSig, Nx, (T-1)*Ne)
+    sumSig = sumSig * sumSig' / Ne
     if structQ == :full
       Q = sumSig/(T-1)
     elseif structQ == :diag
       Q = diagm(diagm(sumSig)) ./ T
     elseif structQ == :const
-      alpha = np.trace(pinv(baseQ).dot(sumSig)) ./ ((T-1)*Nx)
+      alpha = trace(pinv(baseQ) * sumSig) ./ ((T-1)*Nx)
       Q = alpha*baseQ
     end
 
