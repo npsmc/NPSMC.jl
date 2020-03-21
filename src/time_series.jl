@@ -37,7 +37,7 @@ end
 
 import Base:-
 
-function (-) (a :: TimeSeries, b :: TimeSeries)
+function (-)(a :: TimeSeries, b :: TimeSeries)
 
     @assert a.nv == b.nv
     @assert all(a.t .== b.t)
