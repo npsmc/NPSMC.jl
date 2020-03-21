@@ -1,17 +1,34 @@
 using Statistics, LinearAlgebra
 
+"""
+    sqrt_svd(A)  
+
+Returns the square root matrix by SVD
+"""
+function sqrt_svd(A :: AbstractMatrix)  
+   F = svd(A)
+   F.U * diagm(sqrt.(F.S)) * F.Vt
+end
+
 export RMSE
 
 """
     RMSE(a, b)
 
-Compute the Root Mean Square Error between 2 n-dimensional vectors.
+Compute the Root Mean Square Error between 2 time series.
 """
 function RMSE(a, b)
 
     sqrt(mean((vcat(a.u'...) .- vcat(b.u'...)) .^ 2))
 
 end
+
+"""
+    RMSE(e)
+
+Returns the Root Mean Squared Error
+"""
+RMSE(e) = sqrt.(mean(e.^2))
 
 """
     normalise!( w )
