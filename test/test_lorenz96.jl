@@ -71,7 +71,7 @@ end
     rmse = RMSE(xt,x̂)
     println("RMSE(global classic DA) = $rmse ")
     
-    @test rmse < 1.0
+    @test rmse < 5.0
 
 end
 
