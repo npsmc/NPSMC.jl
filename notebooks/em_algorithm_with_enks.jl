@@ -6,7 +6,7 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.4
+#       jupytext_version: 1.4.0
 #   kernelspec:
 #     display_name: Julia 1.3.1
 #     language: julia
@@ -16,19 +16,10 @@
 using LinearAlgebra, Distributions, DifferentialEquations
 using Plots, Random
 
-"""
-Returns the square root matrix by SVD
-"""
-function sqrt_svd(A)  
-   F = svd(A)
-   F.U * diagm(sqrt.(F.S)) * F.Vt
-end
+include("../src/utils.jl")
+include("../src/ensemble.jl")
 
 
-"""
-Returns the Root Mean Squared Error
-"""
-RMSE(E) = sqrt.(mean(E.^2))
 
 # # Generate true state
 
@@ -71,6 +62,7 @@ beta = 8/3
 x0 = [6.39435776, 9.23172442, 19.15323224]
 nt, nv = 1000, 3
 T = nt * dt
+
 function lorenz63(du, u, p, t)
 
     du[1] = p[1] * (u[2] - u[1])
@@ -133,6 +125,8 @@ scatter!(time[indices], obs[indices], mc = :blue, ms = 2,  label="Noisy observat
 
 # +
 """
+    _EnKF(nv, nt, no, xb, B, Q, R, ne, alpha, f, H, obs, prng)
+    
 EnKF forecast and analysis steps
 """
 function _EnKF(nv, nt, no, xb, B, Q, R, ne, alpha, f, H, obs, prng)
@@ -169,6 +163,7 @@ end
 # -
 
 """
+    _EnKS(nv, ne, nt, H, R, yo, xt, no, xb, B, Q, alpha, f, prng)
 
 """
 function _EnKS(nv, ne, nt, H, R, yo, xt, no, xb, B, Q, alpha, f, prng)
@@ -189,6 +184,10 @@ end
 
 
 # +
+"""
+    EnKS(params, prng)
+    
+"""
 function EnKS(params, prng)
 
   Nx = params.state_size
@@ -203,16 +202,16 @@ function EnKS(params, prng)
   B  = params.background_covariance
   Q  = params.model_noise_covariance
   alpha = params.inflation_factor
-  f  = params.model_dynamics.
+  f  = params.model_dynamics
 
   xs, xa, xf = _EnKS(Nx, Ne, T, H, R, Yo, Xt, No, xb, B, Q, alpha, f, prng)
 
   res = (
-          smoothed_ensemble = Xs,
-          analysis_ensemble = Xa,
-          forecast_ensemble = Xf,
-          loglikelihood =  _likelihood(Xf, Yo, H, R),
-          RMSE = RMSE(Xt - Xs.mean(1)),
+          smoothed_ensemble = xs,
+          analysis_ensemble = xa,
+          forecast_ensemble = xf,
+          loglikelihood =  _likelihood(xf, yo, H, R),
+          RMSE = RMSE(Xt - mean(xs),
           params = params
          )
   res
@@ -257,15 +256,8 @@ function maximize(X, obs, H, f; structQ = :full, baseQ = nothing)
     return xb, B, Q, R
 end
 
-# +
 A = rand(3,10)
 mean(A, dims=2)
-
-A * A'
-# -
-
-
-
 # +
 function _likelihood(xf, obs, H, R)
 
@@ -393,3 +385,4 @@ legend([line1, line2, line3], ['True state $x$', 'Noisy observations $y$', 'Esti
 title('Results of the EnKS (only the first component)', fontsize=20)
 
 # -
+
