@@ -8,9 +8,9 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.5
+#       jupytext_version: 1.3.4
 #   kernelspec:
-#     display_name: Julia 1.3.1
+#     display_name: Julia 1.3.0
 #     language: julia
 #     name: julia-1.3
 # ---
@@ -32,8 +32,13 @@
 # # USING PACKAGES
 #
 # Here, we import the different Julia packages. In order to use the analog methog (or nearest neighboor search), we need to install the ["NPSMC" library](https://github.com/npsmc/NPSMC.jl).
+# -
+
+push!(LOAD_PATH, joinpath(@__DIR__,"..","src"))
+using Revise
 
 # + {"nbpresent": {"id": "f975dd20-65cf-43f8-8a6e-96f2acbad4e4"}}
+
 using Plots, DifferentialEquations, NPSMC
 
 # + [markdown] {"nbpresent": {"id": "702967c4-5161-4544-a9f1-88cd5d0155da"}}
@@ -54,8 +59,8 @@ dt_states      = 1
 dt_obs         = 8 
 parameters     = [σ, ρ, β]
 var_obs        = [1]
-nb_loop_train  = 100 
-nb_loop_test   = 10
+nb_loop_train  = 500 
+nb_loop_test   = 20
 sigma2_catalog = 0.0
 sigma2_obs     = 2.0
 
@@ -65,13 +70,11 @@ ssm = StateSpaceModel( lorenz63,
                        nb_loop_train, nb_loop_test,
                        sigma2_catalog, sigma2_obs )
 
-# compute u0 to be in the attractor space
-u0    = [8.0;0.0;30.0]
-tspan = (0.0,5.0)
-prob  = ODEProblem(ssm.model, u0, tspan, parameters)
-u0    = last(solve(prob, reltol=1e-6, save_everystep=false))
+# compute x0 to be in the attractor space
+prob  = ODEProblem(ssm.model, [8.0;0.0;30.0], (0.0,5.0), parameters)
+x0    = last(solve(prob, reltol=1e-6, save_everystep=false))
 
-xt, yo, catalog = generate_data( ssm, u0 );
+xt, yo, catalog = generate_data( ssm, x0 );
 
 # + {"nbpresent": {"id": "241f9ce2-fe11-4533-be8f-991a700f3920"}}
 plot( xt.t, xt[1])
@@ -111,6 +114,3 @@ scatter!( yo.t, yo[1]; markersize=2, label="observations")
 # # Remark
 #
 # Note that for all the previous experiments, we use the robust Ensemble Kalman Smoother (EnKS) with the increment or local linear regressions and the Gaussian sampling. If you want to have realistic state estimations, we preconize the use of the Particle Filter (DA.method = 'PF') with the locally constant regression (AF.regression = 'locally_constant') and the multinomial sampler (AF.sampling = 'multinomial') with a large number of particles (DA.N). For more details about the different options, see the attached publication: Lguensat, R., Tandeo, P., Ailliot, P., Pulido, M., & Fablet, R. (2017). The Analog Data Assimilation. *Monthly Weather Review*, 145(10), 4093-4107.
-# -
-
-
