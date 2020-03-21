@@ -1,6 +1,6 @@
 using Random, LinearAlgebra
 
-import DifferentialEquations: ODEProblem, solve
+import DifferentialEquations: SDEProblem, solve
 import Distributions: MvNormal, rand
 
 export generate_data
@@ -15,7 +15,7 @@ from StateSpace generate:
 """
 function generate_data(ssm::StateSpaceModel, u0::Vector{Float64}, seed = 42)
 
-    Random.seed!(seed)
+    rng = MersenneTwister(seed)
 
     try
         @assert ssm.dt_states < ssm.dt_obs
@@ -30,22 +30,31 @@ function generate_data(ssm::StateSpaceModel, u0::Vector{Float64}, seed = 42)
     end
 
     tspan = (0.0, ssm.nb_loop_test)
-    prob = ODEProblem(ssm.model, u0, tspan, ssm.params)
+
+    function σ( du, u, p, t)
+
+        for i in eachindex(du)
+            du[i] = ssm.sigma2_obs
+        end
+
+    end
+
+    prob = SDEProblem(ssm.model, σ, u0, tspan, ssm.params)
 
     # generSate true state (xt)
-    sol = solve(prob, reltol = 1e-6, saveat = ssm.dt_states * ssm.dt_integration)
+    sol = solve(prob, saveat = ssm.dt_states * ssm.dt_integration)
     xt = TimeSeries(sol.t, sol.u)
 
     # generate  partial/noisy observations (yo)
     nt = xt.nt
     nv = xt.nv
-    d = MvNormal(ssm.sigma2_obs .* Matrix(I, nv, nv))
 
     yo = TimeSeries(xt.t, xt.u .* NaN)
     step = ssm.dt_obs ÷ ssm.dt_states
     nt = length(xt.t)
-    ε = rand(d, nt)
 
+    d = MvNormal(ssm.sigma2_obs .* Matrix(I, nv, nv))
+    ε = rand(d, nt)
     for j = 1:step:nt
         for i in ssm.var_obs
             yo.u[j][i] = xt.u[j][i] + ε[i, j]
@@ -55,19 +64,11 @@ function generate_data(ssm::StateSpaceModel, u0::Vector{Float64}, seed = 42)
     # generate catalog
     u0 = last(sol)
     tspan = (0.0, ssm.nb_loop_train)
-    prob = ODEProblem(ssm.model, u0, tspan, ssm.params)
-    sol = solve(prob, reltol = 1e-6, saveat = ssm.dt_integration)
+    prob = SDEProblem(ssm.model, σ, u0, tspan, ssm.params)
+    sol = solve(prob, saveat = ssm.dt_integration)
     n = length(sol.t)
 
-    if ssm.sigma2_catalog > 0
-        μ = zeros(Float64, nv)
-        σ = ssm.sigma2_catalog .* Matrix(I, nv, nv)
-        d = MvNormal(μ, σ)
-        η = rand(d, n)
-        catalog_tmp = [η[:, j] .+ u for u in sol.u]
-    else
-        catalog_tmp = sol.u
-    end
+    catalog_tmp = sol.u
 
     xt, yo, Catalog(hcat(catalog_tmp...), ssm)
 
