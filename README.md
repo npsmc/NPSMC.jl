@@ -55,3 +55,4 @@ julia> notebook(dir=joinpath(pwd(),"notebooks"))
 - [ParticleFilters.jl](https://github.com/JuliaPOMDP/ParticleFilters.jl): Simple particle filter implementation in Julia
 - [MiniKalman.jl](https://github.com/cstjean/MiniKalman.jl):  Kalman Filtering package
 - [CovarianceMatrices.jl](https://github.com/gragusa/CovarianceMatrices.jl): Heteroskedasticity and Autocorrelation Consistent Covariance Matrix Estimation for Julia.
+- [Francesco Martinuzzi posts]](https://martinuzzifrancesco.github.io/posts/)
